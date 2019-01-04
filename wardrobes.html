@@ -1,0 +1,1595 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>habitican Wardrobes</title>
+    <meta name="description" content="Wardrobes for Heros of Habitica" />
+    <meta name="author" content="@Piti! Code is based on Alys (Alice Harris) lady_alys@oldgods.net code from Data Display Tool" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script> 
+	
+<script type="text/javascript">
+
+$(function() { // wraps around all our code to not pollute global namespace
+
+//////////////////////////////////////////////////////////////////////
+////   Global Variables                              /////////////////
+//////////////////////////////////////////////////////////////////////
+
+var content = {}; // Habitica's content
+var user = {}; // holds user content
+var tasksFromDb = {}; // holds tasks
+var serverUrl = 'https://habitica.com:443/api/v3';
+var userID     = '';
+var apiToken   = '';
+var equippedKeys = {};
+var blessing = 	   {"head": "b", "armor": "b", "weapon": "b", "shield": "b"};
+var initialGear =  {"head": "i", "armor": "i", "weapon": "i", "shield": "i"};
+var currentGear =  {"head": "c", "armor": "c", "weapon": "c", "shield": "c"};
+var intelligence = {"head": "i", "armor": "i", "weapon": "i", "shield": "i"};
+var perception =   {"head": "p", "armor": "p", "weapon": "p", "shield": "p"};
+var constitution = {"head": "c", "armor": "c", "weapon": "c", "shield": "c"};
+var strength     = {"head": "s", "armor": "s", "weapon": "s", "shield": "s"};
+var legendary 	 = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"}; // Nameless Helm, Jean Chalard's Noble Tunic, Stephen Weber's Shaft of the Dragon, Mustaine's Milestonemashing Morningstar
+var legendaryGearOwned = false;
+var wardrobeEquipped = "Initial";
+var userName = '';
+var pageRunningCount = 0;
+var equipCount = 0;
+var equipCountSkip = 0;
+
+
+//////////////////////////////////////////////////////////////////////
+////   Get UUID from URL      ////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+var url_vars = getUrlVars();
+if (url_vars.uuid) {
+    $("#userId").val(url_vars.uuid);
+}
+function getUrlVars() {
+    // Function found at http://stackoverflow.com/questions/4656843/jquery-get-querystring-from-url#answer-4656873
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for(var i = 0; i < hashes.length; i++)
+    {
+        hash = hashes[i].split('=');
+        vars.push(hash[0]);
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
+
+
+
+//////////////////////////////////////////////////////////////////////
+////   Login events      /////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+$('#userApiDetailsForm').submit(function(event){
+    /* The user manually submitted the API connection form. */
+
+    userID   = $('#userId').val();
+    apiToken = $('#apiToken').val();
+    fetchData();
+});
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////
+////   Data Fetch Function   /////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+
+
+function fetchData() {
+    //$('#loading .good').show();
+    $('#loading .bad' ).hide();
+	$('#modalContent').html('Please wait, fetching data from Habitica...');
+	$('#modal').show();
+
+    var ajaxRunningCount = 3; // drops to 0 when all calls have succeeded
+    // fetch the site-wide content (gear names and stats, etc):
+    $.ajax({
+        url: serverUrl + '/content',
+        type: 'GET',
+        dataType: 'json',
+        cache: true,
+        success: fetchContentSuccess,
+        error: fetchFailure
+    });
+
+	// fetch the tasks content (dotods dailies etc):
+    $.ajax({
+        url: serverUrl + '/tasks/user',
+        type: 'GET',
+        dataType: 'json',
+        cache: true,
+		 beforeSend: function(xhr){
+                xhr.setRequestHeader('x-api-user', userID);
+                xhr.setRequestHeader('x-api-key',  apiToken);
+            },
+        success: fetchTasksSuccess,
+        error: fetchFailure
+    });
+
+
+
+    // fetch the user's own content (gear owned, etc):
+	$.ajax({
+        url: serverUrl + '/user',
+        type: 'GET',
+        dataType: 'json',
+        cache: false,
+        beforeSend: function(xhr){
+                xhr.setRequestHeader('x-api-user', userID);
+                xhr.setRequestHeader('x-api-key',  apiToken);
+            },
+        success: fetchUserSuccess,
+        error: fetchFailure
+        });
+
+    function fetchFailure() {
+        $('#modal').hide();
+        $('#loading .bad' ).show();
+    }
+
+    function fetchContentSuccess(data) {
+        content = data.data;
+        ajaxRunningCount--;
+        if (ajaxRunningCount === 0) { // all ajax calls have finished
+            $('#modal').hide();
+			parseData();
+        }
+    }
+
+    function fetchUserSuccess(data) {
+        user = data.data;
+        ajaxRunningCount--;
+        if (ajaxRunningCount === 0) { // all ajax calls have finished
+            $('#modal').hide();
+			parseData();
+        }
+    }
+
+	function fetchTasksSuccess(data) {
+        tasksFromDb = data.data;
+        ajaxRunningCount--;
+        if (ajaxRunningCount === 0) { // all ajax calls have finished
+            $('#modal').hide();
+			parseData();
+        }
+    }
+
+
+
+} // end of fetchData() //////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////////////////////
+////   Parse Data Function   /////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+function parseData() {
+    var htmlStats = ''; // displaying name, class, current equipment, int, per, str, con
+	var htmlStart = '';
+    var html = '';
+	var htmlEnd = '';
+	var int = 0;
+	var per = 0;
+	var str = 0;
+	var con = 0;
+	var dailyTotal = 0;
+	var dailyCompleted = 0;
+	var head = (user.items.gear.equipped.head);
+	var armor = (user.items.gear.equipped.armor);
+	var weapon = (user.items.gear.equipped.weapon);
+	var shield = (user.items.gear.equipped.shield);
+
+	$('#headerExtras').html('<div id="userNameDisplay">' + user.profile.name + '(' + user.stats.class + ')</div>');	// display UserName and Class
+	evaluateTasks();
+	function evaluateTasks() {
+		for (var i in tasksFromDb) {
+       		if (tasksFromDb[i].type == 'daily' && tasksFromDb[i].isDue == true) {
+				dailyTotal ++;
+				if (tasksFromDb[i].completed == true) {
+					dailyCompleted ++;
+				}
+			}
+		}; // end for
+	}; // end of function evaluateTasks;
+
+	checkLegendaryGear();
+	function checkLegendaryGear() {
+		var ownedGear = user.items.gear.owned;
+		if (ownedGear["head_special_2"] == true && ownedGear["armor_special_2"] == true && ownedGear["weapon_special_2"] == true && ownedGear["shield_special_goldenknight"] == true) {
+			legendaryGearOwned = true;}
+	}; // end of function checkLegendaryGear
+
+
+
+
+	getMaxGear(); // Searches for the best possible type of gear in means of INT and PER, that is being posessed by the user
+	function getMaxGear() {
+		var maxIntHead = 0;
+		var maxIntArmor = 0;
+		var maxIntShield = 0;
+		var maxIntWeapon = 0;
+		var maxPerHead = 0;
+		var maxPerArmor = 0;
+		var maxPerShield = 0;
+		var maxPerWeapon = 0;
+		var maxConHead = 0;
+		var maxConArmor = 0;
+		var maxConShield = 0;
+		var maxConWeapon = 0;
+		var maxStrHead = 0;
+		var maxStrArmor = 0;
+		var maxStrShield = 0;
+		var maxStrWeapon = 0;
+		var maxBlesHead = 0;
+		var maxBlesArmor = 0;
+		var maxBlesShield = 0;
+		var maxBlesWeapon = 0;
+		var ownedKeys = {};
+		var ownedGear = user.items.gear.owned; // Format: "nameOfEquipment": boolean,   // user.items.gear.owned = false might occur when item was owned once but lost due to death. Still to be implemted
+
+		for (var item in ownedGear){ // var item: Format: nameOfEquipment
+			ownedKeys[item] = content.gear.flat[item]; // Habiticas content information about each key
+
+			//separately search for head, armor, weapon, shield in
+			// INT
+			if ((ownedKeys[item].klass == 'mage' && user.stats.class == 'mage') || (ownedKeys[item].klass == 'healer' && user.stats.class == 'healer')){
+				var ownedKeyBonusInt = 1.5 * ownedKeys[item].int;
+				} else {
+				var ownedKeyBonusInt = ownedKeys[item].int;
+				}
+			if (ownedKeyBonusInt >= maxIntHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				intelligence.head = ownedKeys[item].key; // put best gear into wardrobe int
+				maxIntHead = ownedKeyBonusInt;
+			} // end of if
+
+			if (ownedKeyBonusInt >= maxIntArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				intelligence.armor = ownedKeys[item].key; // put best gear into wardrobe int
+				maxIntArmor = ownedKeyBonusInt;
+			} // end of if
+
+			if (ownedKeyBonusInt >= maxIntShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				intelligence.shield = ownedKeys[item].key; // put best gear into wardrobe int
+				maxIntShield = ownedKeyBonusInt;
+			} // end of if
+
+			if (ownedKeyBonusInt >= maxIntWeapon && ownedKeys[item].type == "weapon") {
+				if (ownedKeys[item].twoHanded == true) {} //shortcut twohanded .. comparison to be implemented later
+				else {
+					intelligence.weapon = ownedKeys[item].key; // put best gear into wardrobe int
+					maxIntWeapon = ownedKeyBonusInt;
+				}
+			} // end of if
+
+
+			// PER
+			// we need ownedKeys[item].per copied into ownedKeysBonusPer to prevent it from being corrupted
+			// ownedKeyBonusPer contains the per value of the respective item or the 1.5* per value if item confers class bonus
+			if ((ownedKeys[item].klass == 'rogue' && user.stats.class == 'rogue') || (ownedKeys[item].klass == 'mage' && user.stats.class == 'mage')){
+				var ownedKeyBonusPer = 1.5 * ownedKeys[item].per;
+				} else {
+				var ownedKeyBonusPer = ownedKeys[item].per;
+				}
+			if (ownedKeyBonusPer >= maxPerHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				perception.head = ownedKeys[item].key; // put best gear into wardrobe per
+				maxPerHead = ownedKeyBonusPer;
+			} // end of if
+
+			if (ownedKeyBonusPer >= maxPerArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				perception.armor = ownedKeys[item].key; // put best gear into wardrobe per
+				maxPerArmor = ownedKeyBonusPer;
+			} // end of if
+
+			if (ownedKeyBonusPer >= maxPerShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				perception.shield = ownedKeys[item].key; // put best gear into wardrobe per
+				maxPerShield = ownedKeyBonusPer;
+			} // end of if
+
+			if (ownedKeyBonusPer >= maxPerWeapon && ownedKeys[item].type == "weapon") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				if (ownedKeys[item].twoHanded) {} else {
+				perception.weapon = ownedKeys[item].key; // put best gear into wardrobe per
+				maxPerWeapon = ownedKeyBonusPer;}
+			} // end of if
+
+
+			// CON
+			// we need ownedKeys[item].con copied into ownedKeysBonusCon to prevent it from being corrupted
+			// ownedKeyBonusCon contains the con value of the respective item or the 1.5* con value if item confers class bonus
+			if ((ownedKeys[item].klass == 'healer' && user.stats.class == 'healer') || (ownedKeys[item].klass == 'warrior' && user.stats.class == 'warrior')){
+				var ownedKeyBonusCon = 1.5 * ownedKeys[item].con;
+				} else {
+				var ownedKeyBonusCon = ownedKeys[item].con;
+				}
+			if (ownedKeyBonusCon >= maxConHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				constitution.head = ownedKeys[item].key; // put best gear into wardrobe con
+				maxConHead = ownedKeyBonusCon;
+			} // end of if
+
+			if (ownedKeyBonusCon >= maxConArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				constitution.armor = ownedKeys[item].key; // put best gear into wardrobe con
+				maxConArmor = ownedKeyBonusCon;
+			} // end of if
+
+			if (ownedKeyBonusCon >= maxConShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				constitution.shield = ownedKeys[item].key; // put best gear into wardrobe con
+				maxConShield = ownedKeyBonusCon;
+			} // end of if
+
+			if (ownedKeyBonusCon >= maxConWeapon && ownedKeys[item].type == "weapon") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				if (ownedKeys[item].twoHanded) {} else {
+				constitution.weapon = ownedKeys[item].key; // put best gear into wardrobe con
+				maxConWeapon = ownedKeyBonusCon;}
+			} // end of if
+
+			// STR
+			// we need ownedKeys[item].str copied into ownedKeysBonusCon to prevent it from being corrupted
+			// ownedKeyBonusCon contains the con value of the respective item or the 1.5* con value if item confers class bonus
+			if ((ownedKeys[item].klass == 'warrior' && user.stats.class == 'warrior') || (ownedKeys[item].klass == 'rogue' && user.stats.class == 'rogue')){
+				var ownedKeyBonusStr = 1.5 * ownedKeys[item].str;
+				} else {
+				var ownedKeyBonusStr = ownedKeys[item].str;
+				}
+
+			if (ownedKeyBonusStr >= maxStrHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				strength.head = ownedKeys[item].key; // put best gear into wardrobe str
+				maxStrHead = ownedKeyBonusStr;
+			} // end of if
+
+			if (ownedKeyBonusStr >= maxStrArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				strength.armor = ownedKeys[item].key; // put best gear into wardrobe str
+				maxStrArmor = ownedKeyBonusStr;
+			} // end of if
+
+			if (ownedKeyBonusStr >= maxStrShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				strength.shield = ownedKeys[item].key; // put best gear into wardrobe str
+				maxStrShield = ownedKeyBonusStr;
+			} // end of if
+
+			if (ownedKeyBonusStr >= maxStrWeapon && ownedKeys[item].type == "weapon") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				if (ownedKeys[item].twoHanded) {} else {
+				strength.weapon = ownedKeys[item].key; // put best gear into wardrobe str
+				maxStrWeapon = ownedKeyBonusStr;}
+			} // end of if
+
+
+
+
+		// Blessing wardrobe for Healers (maximizes INT+CON)
+
+
+
+		// Blessing for Healers INT+CON
+			// we need ownedKeys[item].str copied into ownedKeysBonusBles to prevent it from being corrupted
+			// ownedKeyBonusBles contains the con+int value of the respective item or the 1.5* (con+int) value if item confers class bonus
+			if (ownedKeys[item].klass == 'healer' && user.stats.class == 'healer'){
+				var ownedKeyBonusBles = 1.5 * (ownedKeys[item].con + ownedKeys[item].int);
+				} else {
+				var ownedKeyBonusBles = ownedKeys[item].con + ownedKeys[item].int;
+				}
+
+			if (ownedKeyBonusBles >= maxBlesHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				blessing.head = ownedKeys[item].key; // put best gear into wardrobe str
+				maxBlesHead = ownedKeyBonusBles;
+			} // end of if
+
+			if (ownedKeyBonusBles >= maxBlesArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				blessing.armor = ownedKeys[item].key; // put best gear into wardrobe str
+				maxBlesArmor = ownedKeyBonusBles;
+			} // end of if
+
+			if (ownedKeyBonusBles >= maxBlesShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				blessing.shield = ownedKeys[item].key; // put best gear into wardrobe str
+				maxBlesShield = ownedKeyBonusBles;
+			} // end of if
+
+			if (ownedKeyBonusBles >= maxBlesWeapon && ownedKeys[item].type == "weapon") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
+				if (ownedKeys[item].twoHanded) {} else {
+				blessing.weapon = ownedKeys[item].key; // put best gear into wardrobe str
+				maxBlesWeapon = ownedKeyBonusBles;}
+			} // end of if
+		} // end for var Item in ownedGear
+
+
+		compareGear();
+	} // end of getMaxGear
+
+	function compareGear(){ //checks if the currently equipped gear is equal to one of the wardrobes
+		if (user.items.gear.equipped.head == intelligence.head && user.items.gear.equipped.armor == intelligence.armor && user.items.gear.equipped.shield == intelligence.shield && user.items.gear.equipped.weapon == intelligence.weapon){
+			wardrobeEquipped = 'Intelligence';
+		}
+		if (user.items.gear.equipped.head == perception.head && user.items.gear.equipped.armor == perception.armor && user.items.gear.equipped.shield == perception.shield && user.items.gear.equipped.weapon == perception.weapon){
+			wardrobeEquipped = 'Perception';
+		}
+		if (user.items.gear.equipped.head == constitution.head && user.items.gear.equipped.armor == constitution.armor && user.items.gear.equipped.shield == constitution.shield && user.items.gear.equipped.weapon == constitution.weapon){
+			wardrobeEquipped = 'Constitution';
+		}
+		if (user.items.gear.equipped.head == strength.head && user.items.gear.equipped.armor == strength.armor && user.items.gear.equipped.shield == strength.shield && user.items.gear.equipped.weapon == strength.weapon){
+			wardrobeEquipped = 'Strength';
+		}
+		if (user.items.gear.equipped.head == legendary.head && user.items.gear.equipped.armor == legendary.armor && user.items.gear.equipped.shield == legendary.shield && user.items.gear.equipped.weapon == legendary.weapon){
+			wardrobeEquipped = 'Legendary';
+		}
+		if (user.items.gear.equipped.head == blessing.head && user.items.gear.equipped.armor == blessing.armor && user.items.gear.equipped.shield == blessing.shield && user.items.gear.equipped.weapon == blessing.weapon){
+			wardrobeEquipped = 'Blessing';
+		}
+			
+	}; // end of compareGear
+	
+	function calculateAttributes(wardrobe) {
+		var equipment = {"int" : 0, "per" : 0, "str" : 0, "con" : 0};
+		var bonus = {"int" : 0, "per" : 0, "str" : 0, "con" : 0};
+		var total = {"int" : 0, "per" : 0, "str" : 0, "con" : 0};
+		var totalUnbuffed = {"int" : 0, "per" : 0, "str" : 0, "con" : 0};
+		var totalPerfectDay = {"int" : 0, "per" : 0, "str" : 0, "con" : 0};
+		var level = 0;
+		var perfectDay = 0;
+		var manaRefresh = 0;
+		var impactSkill = 0;
+		var toolsOfTheTrade = 0;
+		var blessing = 0;
+		var protectiveAura = 0; 
+		var valorousPresence = 0;
+		var earthquake = 0; 
+		var wardrobeKeys = {};
+    	for (var i in wardrobe) { //wardrobe is an altered copy of user.items.gear.equipped
+       	 	var key = wardrobe[i];
+         	wardrobeKeys[key] = content.gear.flat[key];
+			if (wardrobeKeys[key].klass == user.stats.class){
+				bonus.int += 0.5 * wardrobeKeys[key].int;
+				bonus.str += 0.5 * wardrobeKeys[key].str;
+				bonus.per += 0.5 * wardrobeKeys[key].per;
+				bonus.con += 0.5 * wardrobeKeys[key].con;
+			}
+			equipment.int += wardrobeKeys[key].int;
+			equipment.per += wardrobeKeys[key].per;
+			equipment.str += wardrobeKeys[key].str;
+			equipment.con += wardrobeKeys[key].con;
+		}; // end for
+		level = Math.floor(user.stats.lvl / 2);
+		perfectDay = Math.round(user.stats.lvl / 2);
+		if (perfectDay >= 50) {perfectDay = 50;}
+ 		if (level > 50) {level = 50;}
+		totalUnbuffed.int = level + equipment.int + bonus.int + user.stats.int; // totalUnbuffed: level + equipment + allocation
+		totalUnbuffed.per = level + equipment.per + bonus.per + user.stats.per; // perfect day buff does not apply to Tools of the Trade
+		totalUnbuffed.con = level + equipment.con + bonus.con + user.stats.con; // but it does apply to manamax
+		totalUnbuffed.str = level + equipment.str + bonus.str + user.stats.str;
+		total.int = totalUnbuffed.int + user.stats.buffs.int; // total: everything - we need that to display attribute stats / we don't need it for calculation of manaRefresh and manaMax...
+		total.per = totalUnbuffed.per + user.stats.buffs.per;
+		total.con = totalUnbuffed.con + user.stats.buffs.con;
+		total.str = totalUnbuffed.str + user.stats.buffs.str;
+		totalPerfectDay.int = totalUnbuffed.int + perfectDay; // totalPerfectDay.xxx contains level, equipment, classbonus, allocated and PerfectDayBuff (after Cron)
+		totalPerfectDay.per = totalUnbuffed.per + perfectDay;
+		totalPerfectDay.con = totalUnbuffed.con + perfectDay;
+		totalPerfectDay.str = totalUnbuffed.str + perfectDay;
+		manaRefreshPerfectDay 	  = (2 * totalPerfectDay.int + 30) / 10; // manaRefreshPerfectDay is based on 100% completion rate before cron including only Perfect Day buff
+		manaRefreshCompletionRate = ((2 * totalUnbuffed.int + 30) / 10) * dailyCompleted / dailyTotal; // manaRefreshCompletionRate includes no buffs and is multipied with completion rate
+		var currentMana = user.stats.mp;
+		var manaMax = Math.round(2 * total.int + 30); // maximum mana points until cron = ( 2 * buffedINT + 30)
+		var habit = 0.0025 * manaMax;
+		var dailyToDo = 0.01 * manaMax; 
+		if (manaMax < 100) {habit = 0.25; dailyToDo = 1;}
+		//var currentManaPercent = Math.round(100 * currentMana / manaMax)+'%';
+		var manaMaxAfterCronCompletionRate = Math.round(2 * totalUnbuffed.int + 30); // at cron on a non-Perfect Day, all buffs are reset to zero
+		var manaMaxAfterCronPerfectDay 	   = Math.round(2 * totalPerfectDay.int + 30)//;  + Math.round(level / 2); // at cron on a Perfect Day all buffs are reset to zero, except Perfect Day buff
+		var manaAfterCronCompletionRate	   = Math.round(currentMana + manaRefreshCompletionRate); // before checking if manaMaxAfterCron is exceeded.
+		var manaAfterCronPerfectDay		   = Math.round(currentMana + manaRefreshPerfectDay); // before checking if manaMaxAfterCron is exceeded.
+		var manaCapCompletionRate = 0;
+		var manaCapPerfectDay = 0;
+		if (dailyCompleted == dailyTotal) { // fixes bug displaying mana max after cron without perfect day buff on the left column when all dailies are completed 
+			manaMaxAfterCronCompletionRate = manaMaxAfterCronPerfectDay;
+			manaRefreshCompletionRate = manaRefreshPerfectDay; 
+			manaAfterCronCompletionRate = manaAfterCronPerfectDay; 
+		}
+		if (manaAfterCronCompletionRate >= manaMaxAfterCronCompletionRate) {
+			manaCapCompletionRate = manaAfterCronCompletionRate - manaMaxAfterCronCompletionRate;
+		}
+		if (manaAfterCronPerfectDay >= manaMaxAfterCronPerfectDay) {
+			manaCapPerfectDay = manaAfterCronPerfectDay - manaMaxAfterCronPerfectDay;
+		}
+
+		toolsOfTheTrade = Math.round((100 * (level + equipment.per + user.stats.per + bonus.per)) / (level + equipment.per + user.stats.per + bonus.per + 50));
+		blessing = Math.round((total.int + total.con + 5) * 0.04);
+		protectiveAura = Math.round((200 * totalUnbuffed.con) / (200 + totalUnbuffed.con));
+		valorousPresence = Math.ceil((20 * totalUnbuffed.str) / (200 + totalUnbuffed.str));
+		earthquake = Math.round((30 * totalUnbuffed.int) / (200 + totalUnbuffed.int));
+		
+		htmlStats +='<section class="container">' +
+					'<div class="one"><section class="innerContainer"><div class="innerOne"><a style="color: #f74e52; vertical-align: middle">STR:</a><h3>' + total.str + '</h3></div>' +
+					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.str + '<br></a><a>Bonus: ' + bonus.str + '<br></a><a>Allocation: ' + user.stats.str + '<br></a><a>Buffs: ' + user.stats.buffs.str + '</a></div></section></div>' +
+					
+					'<div class="two"><section class="innerContainer"><div class="innerOne"><a style="color: #2995cd; vertical-align: middle">INT:</a><h3>' + total.int + '</h3></div>' +
+					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.int + '<br></a><a>Bonus: ' + bonus.int + '<br></a><a>Allocation: ' + user.stats.int + '<br></a><a>Buffs: ' + user.stats.buffs.int + '</a></div></section></div>' +
+					'</section>';
+		htmlStats +='<section class="container">' +
+					'<div class="one"><section class="innerContainer"><div class="innerOne"><a style="color: #ffa623; vertical-align: middle">CON:</a><h3>' + total.con + '</h3></div>' +
+					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.con + '<br></a><a>Bonus: ' + bonus.con + '<br></a><a>Allocation: ' + user.stats.con + '<br></a><a>Buffs: ' + user.stats.buffs.con + '</a></div></section></div>' +
+					
+					'<div class="two"><section class="innerContainer"><div class="innerOne"><a style="color: #4f2a93; vertical-align: middle">PER:</a><h3>' + total.per + '</h3></div>' +
+					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.per + '<br></a><a>Bonus: ' + bonus.per + '<br></a><a>Allocation: ' + user.stats.per + '<br></a><a>Buffs: ' + user.stats.buffs.per + '</a></div></section></div>' +
+					'</section>';
+		// Progression of Mana: 
+		var manaLostOnCapCompletionRate = (currentMana + manaRefreshCompletionRate - manaMaxAfterCronCompletionRate);
+						if (manaLostOnCapCompletionRate < 0) {
+							manaLostOnCapCompletionRate = 0;
+						} else { // Perfect Day
+							manaAfterCronCompletionRate = manaMaxAfterCronCompletionRate;
+						}
+		var manaLostOnCapPerfectDay = (currentMana + manaRefreshPerfectDay - manaMaxAfterCronPerfectDay);
+						if (manaLostOnCapPerfectDay < 0) {
+							manaLostOnCapPerfectDay = 0;
+							manaAfterCronPerfectDay = currentMana + manaRefreshPerfectDay;
+						} else {
+							manaAfterCronPerfectDay = manaMaxAfterCronPerfectDay;
+						}
+		// Progression of Mana around Cron time
+		htmlStats +='<section class="containerMana"><div style="font-weight: bold">&nbsp; Progression of Mana</div>'+
+					'<div class="left">Dailies completed:<br><br>' + //first column
+					'current Mana:<br>' +
+					'Mana refresh at cron:<br>'+
+					'Mana lost on cap:<br>'+
+					'Mana after Cron:<br>'+
+					'Mana max after Cron:'+
+					'</div>'+
+					'<div class="middle">'+ // second column 
+					 + dailyCompleted + '/' + dailyTotal +'<br>'+ // not all Dailies completed
+					'<br>'+
+					Math.round(currentMana) +'<br>'+ //current mana
+					Math.round(manaRefreshCompletionRate) +'<br>'+ // mana refresh calculated on ratio of completed dailies
+					Math.round(-manaLostOnCapCompletionRate) +'<br>'+
+					Math.round(manaAfterCronCompletionRate) +'<br>'+
+					manaMaxAfterCronCompletionRate +
+					'</div>'+
+					'<div class="right">'+ // third column
+					 + dailyTotal + '/' + dailyTotal +'<br>'+ // all Dailies completed
+					'<br>'+
+					 Math.round(currentMana) +'<br>'+ // current mana
+					 Math.round(manaRefreshPerfectDay) +'<br>'+
+					 Math.round(-manaLostOnCapPerfectDay) +'<br>'+
+					 Math.round(manaAfterCronPerfectDay) +'<br>' +
+					 manaMaxAfterCronPerfectDay +
+					'</div></section>';
+		// Skills
+		htmlStats +='<section class="container" style="margin: 5px">'+
+					'<div class="one" style="background-color: #ffffff"> Impact of Skills<br>';
+					if (user.stats.class == 'rogue') {htmlStats += 'Tools of the Trade: ' + toolsOfTheTrade;} //continue Flexbox 2, 4, 6
+					if (user.stats.class == 'wizard') {htmlStats += 'Earthquake: ' + earthquake;}
+					if (user.stats.class == 'healer') {htmlStats += 'Protective Aura: ' + protectiveAura + '<br> Blessing: ' + blessing;}
+					if (user.stats.class == 'warrior') {htmlStats += 'Valorous Presence: ' + valorousPresence;}
+		htmlStats +='</div>'+
+					'<div class="two" style="background-color: #ffffff"> Maximum Mana: ' + manaMax + '<br>' +
+					'Mana refresh ...<br>' +
+					'- per Habit: ' + (Math.round((habit * 100)) / 100) + '<br>' +
+					'- per Daily: ' + (Math.round((dailyToDo * 100)) / 100) + '<br>' +
+					'- per To-Do: ' + (Math.round((dailyToDo * 100)) / 100) + '<br>' +
+					'</div></section>';
+					 	
+
+
+
+
+}; // end of function calculateAttributes
+
+
+
+//////////////////////////////
+//// calculate and display wardrobes and stats
+//////////////////////////////
+
+	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var
+	htmlStats = '<div class="flex-container">'; 
+	//start flexbox 1
+	htmlStats += '<div id="Initial" style="background-color: #cccccc"><h3>Equipped Gear:</h3>'; 
+	calculateAttributes(copyGear); // continue with content of flexbox 1 there
+	htmlStats +='<br>' +
+				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + user.items.gear.equipped.head + '.png">'+
+				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + user.items.gear.equipped.armor + '.png">'+
+				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + user.items.gear.equipped.weapon + '.png">'+
+				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + user.items.gear.equipped.shield + '.png">'+
+				'</div>'; //end single box
+
+
+	// start Flexbox 2
+	htmlStats +='<div id="Intelligence" style="background-color: #2995cd"><h3>Wardrobe Intelligence:  <input id="INT" type="submit" value=" Equip "></h3>'; //e0ffff
+	copyGear.head = intelligence.head; // corrupting copyGear with wardrobes gear -- pendejo doesn't pollute user.items.gear.equipped anymore because of deep copying it to copyGear!
+	copyGear.armor = intelligence.armor;
+	copyGear.weapon = intelligence.weapon;
+	copyGear.shield = intelligence.shield;
+	calculateAttributes(copyGear);
+	htmlStats +='<br>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.head].text +
+				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
+				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
+				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
+				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
+				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
+				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
+				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
+				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
+				'</a>' +
+				'</div>'; //end single box
+	htmlStats +='<div id="Perception" style="background-color: #4f2a93"; border: solid><h3>Wardrobe Perception:  <input id="PER" type="submit" value=" Equip "></h3>'; //continue Flexbox 5 ffdfff
+	copyGear.head = perception.head;
+	copyGear.armor = perception.armor;
+	copyGear.weapon = perception.weapon;
+	copyGear.shield = perception.shield;
+	//console.log('Wardrobe Perception : ' + JSON.stringify(copyGear));
+	calculateAttributes(copyGear);
+	htmlStats +='<br>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.head].text +
+				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
+				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
+				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
+				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
+				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
+				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
+				'</a>' + '<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
+				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
+				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
+				'</a>' +
+				'</div>'; //end single box
+
+	htmlStats +='<div id="Strength" style="background-color: #f74e52"><h3>Wardrobe Strength:  <input id="STR" type="submit" value=" Equip "></h3>'; //continue Flexbox 7 ff9999
+	copyGear.head = strength.head;
+	copyGear.armor = strength.armor;
+	copyGear.weapon = strength.weapon;
+	copyGear.shield = strength.shield;
+	//console.log('Wardrobe Strength : ' + JSON.stringify(copyGear));
+	calculateAttributes(copyGear);
+	htmlStats +='<br>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.head].text +
+				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
+				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
+				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
+				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
+				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
+				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
+				'</a>' + '<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
+				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
+				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
+				'</a>' +
+				'</div>'; //end single box
+
+	htmlStats +='<div id="Constitution" style="background-color: #ffa623"><h3>Wardrobe Constitution:  <input id="CON" type="submit" value=" Equip "></h3>'; //continue Flexbox 9 f9f9c9
+	copyGear.head = constitution.head;
+	copyGear.armor = constitution.armor;
+	copyGear.weapon = constitution.weapon;
+	copyGear.shield = constitution.shield;
+	//console.log('Wardrobe Strength : ' + JSON.stringify(copyGear));
+	calculateAttributes(copyGear);
+	htmlStats +='<br>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.head].text +
+				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
+				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
+				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
+				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
+				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
+				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
+				'</a>' + '<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
+				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
+				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
+				'</a>' +
+				'</div>'; //end single box
+
+	htmlStats +='<div id="Blessing" style="background-color: #f9f9c9"><h3>Wardrobe Blessing:  <input id="BLE" type="submit" value=" Equip "></h3>'; //continue Flexbox 9
+	copyGear.head = blessing.head;
+	copyGear.armor = blessing.armor;
+	copyGear.weapon = blessing.weapon;
+	copyGear.shield = blessing.shield;
+	//console.log('Wardrobe Strength : ' + JSON.stringify(copyGear));
+	calculateAttributes(copyGear);
+	htmlStats +='<br>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.head].text +
+				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
+				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
+				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
+				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
+				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
+				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
+				'</a>' + '<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
+				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
+				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
+				'</a>' +
+				'</div>'; //end single box
+
+
+	htmlStats +='<div id="Legendary" style="background-color: #aabb88"><h3>Wardrobe Legendary: ';
+	if (legendaryGearOwned == true) {htmlStats +='<input id="LEG" type="submit" value=" Equip ">'}
+	htmlStats += '</h3>'; //continue Flexbox 9
+	copyGear.head = legendary.head;
+	copyGear.armor = legendary.armor;
+	copyGear.weapon = legendary.weapon;
+	copyGear.shield = legendary.shield;
+	calculateAttributes(copyGear);
+	htmlStats +='<br>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.head].text +
+				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
+				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
+				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
+				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
+				'</a>' +
+				'<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
+				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
+				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
+				'</a>' + '<a class="wrap">' +
+  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
+  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
+				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
+				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
+				'</a>' +
+				'</div>'; //end single box
+
+
+	// Flexbox for info about which wardrobe is currently equipped and for some buttons
+	htmlStats +='<div id="Overview and Buttons">You are wearing:' +
+				'<div id="percept">Wardrobe PER</div>' +
+				'<div id="blessin">Wardrobe Blessing</div>' +
+				'<div id="strengt">Wardrobe STR</div>' +
+				'<div id="initial">Initial wardrobe</div>' +
+				'<div id="intelli">Wardrobe INT</div>' +
+				'<div id="constit">Wardrobe CON</div>' +
+				'<div id="legenda">Legendary wardrobe</div>' +
+				'<div> You have ' + dailyCompleted + ' of ' + dailyTotal + ' dailies completed.</div>' +
+				'<input id="a" type="submit" value="Content"><br>' +
+	 			'<input id="b" type="submit" value="User data"><br>' +
+				'<input id="TAS" type="submit" value="Tasks"><br>' +
+				'<input id="HLP" type="submit" value="Help"><br>' +
+				'<input id="DGR" type="submit" value="Display Gear"><br>' +
+				'<input id="RFR" type="submit" value="Refresh"><br>'
+				'</div>'; // end single box;
+				
+	// last flexbox for graphical information about skills
+	
+	google.charts.load('current', {'packages':['corechart']}); 
+	google.charts.setOnLoadCallback(drawChart);
+
+	function drawChart() {
+			// calculate how much unbuffed STR you currently have
+			var strength = 0;
+			var valorousPresence = 0; 
+			
+			strength = Math.floor(user.stats.lvl / 2); if ( strength > 50 ) { strength = 50;} 
+			strength += (content.gear.flat[user.items.gear.equipped.head].str);
+			strength += (content.gear.flat[user.items.gear.equipped.armor].str);
+			strength += (content.gear.flat[user.items.gear.equipped.shield].str);
+			strength += (content.gear.flat[user.items.gear.equipped.weapon].str);
+			strength += (content.gear.flat[user.items.gear.equipped.headAccessory].str);
+			strength += (content.gear.flat[user.items.gear.equipped.eyewear].str);
+			strength += (content.gear.flat[user.items.gear.equipped.body].str);
+			strength += (content.gear.flat[user.items.gear.equipped.back].str);
+			if (content.gear.flat[user.items.gear.equipped.head].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.head].str)};
+			if (content.gear.flat[user.items.gear.equipped.armor].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.armor].str)};
+			if (content.gear.flat[user.items.gear.equipped.shield].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.shield].str)};
+			if (content.gear.flat[user.items.gear.equipped.weapon].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.weapon].str)};
+			strength += user.stats.str; 
+			valorousPresence = Math.ceil((20 * strength / (200 + strength)));
+			
+			var data = google.visualization.arrayToDataTable([
+			['STR', 'Valorous Presence', {'type': 'string', 'role': 'style'}],
+			[ 23, 2, null], [ 36, 3, null], [ 50, 4, null],
+			[ 67, 5, null], [ 86, 6, null], [ 108, 7, null],
+			[ 134, 8, null], [ 164, 9, null],
+			[ strength, valorousPresence, 'point {size: 12; shape-type: star; fill-color: #a52714;}'], // Draw the star to display current values
+			[ 200, 10, null], [ 245, 11, null], [ 300, 12, null]
+			]);
+
+		var options = {
+			title: 'Valorous Presence = (20*STR / (200+STR))',
+			// tooltip: {trigger: 'none'}, 
+			//hight: 300, 
+			//width: 600, 
+			vAxis: {title: 'Valorous Presence', minValue: 2, maxValue: 12, ticks: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},
+			hAxis: {title: 'STR (Level + Equipment + Class Bonus + Allocation)', fontSize: 6, minValue: 23, maxValue: 300, scaleType: 'null', ticks: [23, 36, 50, 67, 86, 108, 134, 164, 200, 245, 300]},
+			legend: 'none'
+			};
+			var chart = new google.visualization.ScatterChart(document.getElementById('Valorous Presence'));
+			chart.draw(data, options);
+			
+			
+			// calculate how much unbuffed PER you currently have
+			var perception = 0;
+			var ToolsOfTheTrade = 0; 
+			
+			perception = Math.floor(user.stats.lvl / 2); if ( perception > 50 ) { perception = 50;} 
+			perception += (content.gear.flat[user.items.gear.equipped.head].per);
+			perception += (content.gear.flat[user.items.gear.equipped.armor].per);
+			perception += (content.gear.flat[user.items.gear.equipped.shield].per);
+			perception += (content.gear.flat[user.items.gear.equipped.weapon].per);
+			perception += (content.gear.flat[user.items.gear.equipped.headAccessory].per);
+			perception += (content.gear.flat[user.items.gear.equipped.eyewear].per);
+			perception += (content.gear.flat[user.items.gear.equipped.body].per);
+			perception += (content.gear.flat[user.items.gear.equipped.back].per);
+			if (content.gear.flat[user.items.gear.equipped.head].klass == user.stats.class) {perception += 0.5 * (content.gear.flat[user.items.gear.equipped.head].per)};
+			if (content.gear.flat[user.items.gear.equipped.armor].klass == user.stats.class) {perception += 0.5 * (content.gear.flat[user.items.gear.equipped.armor].per)};
+			if (content.gear.flat[user.items.gear.equipped.shield].klass == user.stats.class) {perception += 0.5 * (content.gear.flat[user.items.gear.equipped.shield].per)};
+			if (content.gear.flat[user.items.gear.equipped.weapon].klass == user.stats.class) {perception += 0.5 * (content.gear.flat[user.items.gear.equipped.weapon].per)};
+			perception += user.stats.per; 
+			ToolsOfTheTrade = Math.ceil((100 * perception / (50 + perception)));
+			
+			var data = google.visualization.arrayToDataTable([
+			['PER', 'Tools of the Trade', {'type': 'string', 'role': 'style'}],
+			[ 20, 29, null], [ 30, 38, null], [ 40, 45, null],
+			[ 50, 50, null], [ 60, 55, null], [ 70, 59, null],
+			[ 80, 62, null], [ 90, 65, null], [ 100, 67, null],
+			[ perception, ToolsOfTheTrade, 'point {size: 12; shape-type: star; fill-color: #a52714;}'], // Draw the star to display current values
+			[ 110, 69, null], [ 120, 71, null], [ 130, 73, null],
+			[ 140, 74, null], [ 150, 75, null], [ 160, 77, null],
+			[ 170, 78, null], [ 180, 79, null], [ 190, 80, null]
+			]);
+
+		var options = {
+			title: 'Tools of the Trade = (100*PER / (50+PER))',
+			// tooltip: {trigger: 'none'}, 
+			//hight: 300, 
+			//width: 600, 
+			vAxis: {title: 'Tools of the Trade', minValue: 29, maxValue: 80, ticks: [29, 45, 55, 62, 67, 71, 74, 77, 79, 80]},
+			hAxis: {title: 'PER (Level + Equipment + Class Bonus + Allocation)', fontSize: 6, minValue: 20, maxValue: 190, scaleType: 'null', ticks: [20, 40, 60, 80, 100, 120, 140, 160, 180, 190]},
+			legend: 'none'
+			};
+			
+			
+			var chart = new google.visualization.ScatterChart(document.getElementById('Tools of the Trade'));
+			chart.draw(data, options);
+			
+			
+			}; // end function drawChart
+			
+	
+	htmlStats +='</div><div id="Charts">Charts:' +
+				'<div id="Valorous Presence" style="width: 600px; height: 250px;">Skill: Valorous Presence: </div>'+ 
+				'<div id="Tools of the Trade" style="width: 600px; height: 250px;">Skill: Tools of the Trade: </div>'+ 
+	
+				'</div>'; // end Flexbox; end Flexboxes
+
+			
+
+	$('#userStats').html(htmlStats);
+	displaySelectedWardrobe();
+
+	function displaySelectedWardrobe() {
+	$("#percept").hide();
+	$("#constit").hide();
+	$("#strengt").hide();
+	$("#blessin").hide();
+	$("#intelli").hide();
+	$("#legenda").hide();
+	$("#initial").hide();
+	
+	
+	$("#Perception").css({"border": "none", "border-color": "yellow"});
+	$("#Constitution").css({"border": "none", "border-color": "yellow"});
+	$("#Intelligence").css({"border": "none", "border-color": "yellow"});
+	$("#Strength").css({"border": "none", "border-color": "yellow"});
+	$("#Blessing").css({"border": "none", "border-color": "yellow"});
+	$("#Legendary").css({"border": "none", "border-color": "yellow"});
+	
+	if (wardrobeEquipped == 'Initial') { // show if initial wardrobe is not one of Habitican Wardrobes, else hide Initial
+		$("#Initial").css({"border": "solid", "border-color": "#4f2a93"});
+		} else
+		{$('#Initial').hide();}
+	if (wardrobeEquipped == 'Intelligence') {$('#intelli').show();$("#Intelligence").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped == 'Perception') {$('#percept').show(); $("#Perception").css({"border": "solid", "border-color": "#af8af3"});}
+	if (wardrobeEquipped == 'Constitution') {$('#constit').show();$("#Constitution").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped == 'Strength') {$('#strengt').show();$("#Strength").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped == 'Blessing') {$('#blessin').show();$("#Blessing").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped == 'Legendary') {$('#legenda').show();$("#Legendary").css({"border": "solid", "border-color": "#4f2a93"});}
+	
+	
+	
+	}; // end of function displaySelectedWardrobe
+
+
+
+
+    //////////////////////////////////////////////////////////////////////
+    ////   equip function      (within paseData)   ///////////////////////
+    //////////////////////////////////////////////////////////////////////
+
+	function equip(wardrobe) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
+		var currentItem = '';
+		var typeOfItem = '';
+		var currenType = '';
+		var base = $.when({});
+		var j = 0;
+		var i = 0;
+
+		$.each(wardrobe, function(key, itemToEquip){
+			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
+			typeOfItem = content.gear.flat[itemToEquip].type; //eg displays: head (good)
+			// Second determine which item is located in the correspondig slot [Helm, Armor...] looking at user..equipped]
+			currentItem = user.items.gear.equipped[typeOfItem]; //eg displays: helm_special_2
+			// verify if item is already equipped
+			if (itemToEquip == user.items.gear.equipped[typeOfItem]) {
+				//j++;
+				equipCountSkip++;
+				htmlEnd += content.gear.flat[itemToEquip].text + '<br>';
+				if (equipCountSkip===4){
+					equipCountSkip=0;
+					$("#modalContent").html('already equipped');
+					$('#modal').show();
+					setInterval(function(){
+					$("#modal").hide();
+					},1500)
+				} // end if j=4
+			} else {
+				htmlEnd += content.gear.flat[itemToEquip].text + '<br>';
+				base = base.then(fireAjax(itemToEquip, typeOfItem));	
+			} // end else
+		}); // end each
+
+
+	function fireAjax(itemToEquip, typeOfItem) {
+		return function(){
+			var defer = $.Deferred();
+			$("#modalContent").html('equipping gear can take 10 seconds<br>afterwards please sync Habitica');
+			$("#modal").show();
+				$.ajax({
+					url: 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip,
+					type: 'POST',
+					dataType: 'json',
+					cache: false,
+					beforeSend: function(xhr){
+						xhr.setRequestHeader('x-api-user', userID);
+						xhr.setRequestHeader('x-api-key',  apiToken);
+					},
+					success: function(){user.items.gear.equipped[typeOfItem] = itemToEquip;},
+					complete: function(){defer.resolve();},
+					error: function(){alert('Error<br>Please reload page')}
+				}); // end ajax
+				defer.promise().then(function(){ // this was hard to code // might be anywhere in the code
+						equipCount++;
+						if (equipCount + equipCountSkip === 4){
+							equipCount = 0;
+							equipCountSkip = 0;
+							$('#modal').hide();
+							compareGear(); 
+							parseData();
+						}		
+				});
+			return defer.promise();
+		// example here: http://www.jefferydurand.com/jquery/sequential/javascript/ajax/2015/04/13/jquery-sequential-ajax-promise-deferred.html
+		}; // end of wrap function
+	}; // end of fireAjax(itemToEquip)
+}; // end of equip
+
+
+
+	////////////////////////////////////
+	//// Buttons ///////////////////////
+	////////////////////////////////////
+
+    // Buttons are integrated into the felxboxes
+	/*var buttons =  '<input id="a" type="submit" value="Content">' +
+	 				'<input id="b" type="submit" value="User data">' +
+					//'<input id="c" type="submit" value="initial Wardrobe">' +
+					'<input id="TAS" type="submit" value="Tasks">' +
+					'<input id="INT" type="submit" value="Wardrobe INT">' +
+					'<input id="PER" type="submit" value="Wardrobe PER">';
+	if (legendaryGearOwned == true) {buttons +='<input id="LEG" type="submit" value="Legendary Gear">';}
+	buttons +=		'<input id="TOT" type="submit" value="Tools of the Trade">' +
+					'<input id="HLP" type="submit" value="Help">' +
+					'<input id="DGR" type="submit" value="Display Gear">' +
+					'<input id="RFR" type="submit" value="Refresh">';*/
+					
+	 $('#buttons').html(buttons);
+
+	 $('#a').click(function(){$('#displayContent').html('<div>This is Habitica\'s content: <br><pre>' + JSON.stringify(content.gear.flat, null, 4) + '</pre></div>');});
+	 $('#b').click(function(){$('#displayContent').html('<div>This is your user profile: <br><pre>' + JSON.stringify(user, null, 4) + '</pre></div>');});
+	 $('#TAS').click(function(){$('#displayContent').html('<div>These are your tasks: <br><pre>' + JSON.stringify(tasksFromDb, null, 4) + '</pre></div>'); evaluateTasks();});
+	 $('#INT').click(function(){
+				htmlEnd = '<div>Wardrobe INT <br>';
+				equip(intelligence);
+				htmlEnd += '</div>';
+				$('#displayContent').html(htmlEnd);
+				displaySelectedWardrobe('intelligence');
+				});
+	 $('#PER').click(function(){
+	 			htmlEnd = '<div> Wardrobe PER <br>';
+				equip(perception);
+				htmlEnd += '</div>';
+				$('#displayContent').html(htmlEnd);
+				displaySelectedWardrobe('perception');
+				});
+	  $('#CON').click(function(){
+	 			htmlEnd = '<div> Wardrobe CON <br>';
+				equip(constitution);
+				htmlEnd += '</div>';
+				$('#displayContent').html(htmlEnd);
+				displaySelectedWardrobe('constitution');
+				});
+	 $('#LEG').click(function(){
+	 			htmlEnd = '<div>Wardrobe Legendary Equipment <br>';
+				equip(legendary);
+				htmlEnd += '</div>';
+				$('#displayContent').html(htmlEnd);
+				displaySelectedWardrobe('legendary');
+				});
+	 $('#BLE').click(function(){
+	 			htmlEnd = '<div>Wardrobe Blessing (CON + INT) <br>';
+				equip(blessing);
+				htmlEnd += '</div>';
+				$('#displayContent').html(htmlEnd);
+				displaySelectedWardrobe('blessing');
+				});		
+	 $('#STR').click(function(){
+	 			htmlEnd = '<div>Wardrobe Strength <br>';
+				equip(strength);
+				htmlEnd += '</div>';
+				$('#displayContent').html(htmlEnd);
+				displaySelectedWardrobe('strength');
+				});	
+	 $('#TOT').click(function(){
+	 			$('#modalContent').html('casting: Tools of the Trade');
+				$("#modal").show();
+				$.ajax({
+					url: 'https://habitica.com/api/v3/user/class/cast/toolsOfTrade',
+					type: 'POST',
+					dataType: 'json',
+					cache: false,
+					beforeSend: function(xhr){
+						xhr.setRequestHeader('x-api-user', userID);
+						xhr.setRequestHeader('x-api-key',  apiToken);
+						},
+					success: function(){$("#modal").hide();},
+					error: function(){$("#modal").hide();alert('Error using skill: Tools of the Trade');}
+					}); //end of ajax
+				}); //end of click
+	$('#HLP').click(function(){
+				htmlEnd =   '<div>Version beta 1.0 (is a beta/test version of the tool) <br><br>' +
+							'For help see <a href="http://habitica.wikia.com/wiki/Habitican_Wardrobes">Habitican Wardrobes</a>' +
+							'<br>';
+				$('#displayContent').html(htmlEnd);
+				$('#modalContent').html('Help pressed');
+				$("#modal").show();
+				setInterval(function(){
+					$("#modal").hide();
+					},3000);
+				}); // end of click
+	$('#DGR').click(function(){
+			getMaxGear();
+			var displayGear='<div><pre>Best INT Gear: ' + JSON.stringify(intelligence, null, 4) + '</pre></div>' +
+							'<div><pre>Best PER Gear: ' + JSON.stringify(perception, null, 4) + '</pre></div>' +
+							'<div><pre>Best STR Gear: ' + JSON.stringify(strength, null, 4) + '</pre></div>' +
+							'<div><pre>Best CON Gear: ' + JSON.stringify(constitution, null, 4) + '</pre></div>' +
+							'<div><pre>Best Belling Gear: ' + JSON.stringify(blessing, null, 4) + '</pre></div>' +
+							'<div><pre>Initial Gear: ' + JSON.stringify(user.items.gear.equipped, null, 4) + '</pre></div>' +
+							'<div><pre>Legendary Gear: ' + JSON.stringify(legendary, null, 4) + '</pre></div>';
+			$('#displayContent').html(displayGear);
+			}); // end of click
+	$('#RFR').click(function(){
+			fetchData();
+			}); // end of click
+
+
+    //////////////////////////////////////////////////////////////////////
+    ////   Display the HTML    (within paseData)   ///////////////////////
+    //////////////////////////////////////////////////////////////////////
+	$('#documentationAndForm').html(' ');
+    $('#modal').hide();
+    $('#output').html(htmlStart + html + htmlEnd);
+
+} // End of parseData() and its nested functions
+}); // end of global Function
+</script>
+<style>
+
+/*********************************************************************
+****   Page-wide   ***************************************************
+*********************************************************************/
+
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    background-color: #4f2a93;
+	color: #000000;
+}
+
+#outerFrame {
+	margin: 0px;
+	background-color: #4f2a93;
+}
+
+#innerBody {
+    margin: 5px;
+    padding: 5px; 
+    background-color: #eeeeee;
+	color: #000000;
+	border-radius: 8px;
+}
+
+#loading {
+    margin-right: 30px;
+    margin-left: 30px;
+    color: orange;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+div.scroll {
+    width: 95%;
+    height: 200px;
+    overflow: scroll;
+}
+
+
+#userNameDisplay {
+    text-align: right;
+    font-weight: bold;
+    font-size: 1.5em;
+    margin-bottom: 5px;
+}
+#headerExtras .showHideToggle {
+    white-space: nowrap;
+}
+#explanationAndClearLinks span {
+    padding-left: 10px;
+}
+
+.show {
+    display: block;
+}
+
+.hide {
+    display: none;
+}
+
+.clear {
+    clear: both;
+}
+
+.flex-container {
+  display: flex;
+  flex-wrap: wrap;
+  background-color: #dddddd;
+  line-height: 250px;
+  border-radius: 8px;
+
+}
+
+.flex-container>div {
+  background-color: #eeeeee;
+  border-radius: 8px;
+  width:280px;
+  margin: 10px;
+  border: 10px;
+  text-align: left;
+
+  line-height: 13px;
+  font-size: 12px;
+}
+.flex-displayContent {
+	background-color: #eeeeee;
+	display: flex;
+	flex-wrap: wrap;
+	margin: 10%
+	width: 100%;
+	height: 200px;
+	overflow: scroll;
+
+}
+.flex-displayContent>div {
+	width: 50%;
+	margin: 10px;
+	border: 10px;
+	text-align: left;
+	overflow:scroll;
+}
+/***************************
+******Attriute Containers **
+****************************/
+.container {
+    width: 97%;
+    height: 80px;
+    color: #4e4a57;
+    margin: auto;
+    padding: 0;
+	border-radius: 8px;
+}
+.one {
+    width: 47%;
+    height: 70px;
+	float: left;
+	border-radius: 8px;
+	border-style: solid;
+	border-width: 3px;
+	border-color: #ffffff
+	
+}
+.two {
+	width: 47%;
+    margin-left: 50%;
+    height: 70px;
+	align: left;
+	border-radius: 8px;
+	border-style: solid;
+	border-width: 3px;
+	border-color: #ffffff
+
+
+}
+
+.innerContainer {
+    width: 100%;
+    height: 70px;
+    background: #ffffff;
+    margin: auto;
+    padding: 0px;
+	color: #4e4a57;
+	font-family: "Roboto",sans-serif;
+	
+}
+.innerOne {
+	text-transform: uppercase;
+	text-align: center;
+	vertical-align: 5px;
+	font-size: large;
+    width: 45%;
+    height: 70px;
+    background: #ffffff;
+	color: #4e4a57;
+	float: left;
+	
+
+}
+.innerTwo {
+	font-size: x-small;
+    margin-left: 45%;
+    height: 70px;
+    background: #ffffff;
+	color: #4e4a57;
+
+}
+
+.containerMana {
+    border-radius: 8px;
+	width: 92%;
+    height: 110px;
+    color: #4e4a57;
+    margin: auto;
+    padding: 8px;
+	background: #efffff;
+	font-family: "Roboto",sans-serif;
+}
+
+.left {
+    width: 58%;
+    
+	float: left;
+}
+
+.middle {
+	width: 20%;
+	text-align: right;
+	float: left;
+}
+.right {
+	width: 18%;
+    margin-left: 76%;
+	text-align: right;
+	align: left;
+}
+
+
+
+/***************************
+*** IMG hovers *************
+***************************/
+.wrap {
+  position: relative;
+}
+
+.description {
+  border-radius: 8px;
+  position: absolute;
+  bottom: 65px;
+  left: 1px;
+  font-weight: bold;
+  color: #333333;
+  visibility: invisible;
+  opacity: 0;
+  background-color: #fefefe;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #888888;
+  width: 130px;
+  z-index: 2;
+}
+.descriptionStats {
+  border-radius: 8px;
+  position: absolute;
+  top: 5px;
+
+  left: 90px;
+  right: 50px;
+  font-weight: bold;
+  color: #333333;
+  visibility: invisible;
+  opacity: 0;
+  background-color: #fefefe;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #888888;
+  width: 150px;
+  z-index: 2;
+}
+
+
+.wrap:hover .description {
+  visibility: visible;
+  opacity: 1;
+}
+
+.wrap:hover .descriptionStats {
+  visibility: visible;
+  opacity: 1;
+}
+
+/*********************************
+Mana bars
+************************************/
+.manaContainer {
+  width: 100%;
+  background-color: #271b3d;
+  color: #ffffff;
+  font-size: 1.0em;
+
+}
+
+.manaBar {
+  position: relative;
+  line-height: 20px;
+  height: 20px;
+
+
+
+}
+.manaText {
+  position: absolute; z-index:1;
+  text-align: right;
+  padding-left: 10px;
+  color: #d5c8ff;
+  font-size: 0.8em;
+	}
+
+.current {width: 80%; background-color: #50b5e9;}
+.cron {width: 95%; background-color: #50b5e9;}
+.cap {width: 5%; background-color: #f74e52;}
+
+/**********************************************************************
+****** Modal **********************************************************
+**********************************************************************/
+/* The Modal (background) */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+	border-radius: 8px;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 300px;
+	font-weight: bold;
+}
+
+
+
+/*********************************************************************
+****   Header   ******************************************************
+*********************************************************************/
+
+h1 {
+    float: left;
+	font-size: 1.5em;
+}
+
+h1>a:first-child { /* "Habitica" link in header */
+    color: black;
+    text-decoration: none;
+}
+
+h1>a:first-child:hover { /* "Habitica" link in header */
+    text-decoration: underline;
+}
+
+h1 span {
+    font-size: 0.5em;
+}
+
+</style>
+
+</head>
+
+
+<body>
+<!-- infoModal -->
+<div id="modal" class="modal">
+  <!-- Modal content -->
+  <div id="modalContent" class="modal-content">
+    <p>Weapon_rouge_2 equipped</p>
+  </div>
+</div>
+<!-- end infoModal -->
+
+<div id="innerBody">
+
+<h1>Habitican Wardrobes
+	<span>(v beta 1.0)</span></h1>
+<div id="headerExtras"></div>
+<hr class="clear" />
+<div id="loading">
+    <div class="good hide">
+        <p>Please wait. Syncronizing with Habitica server...</p>
+    </div>
+    <div class="bad hide">
+        <p>There was an error obtaining the data.</p>
+        <ul class="padded">
+            <li>Please reload the page (but perhaps wait half an hour first in case Habitica is under heavy load).</li>
+            <li>If you're using Internet Explorer, try another browser. <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a> or <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a> will be more reliable.</li>
+        </ul>
+    </div>
+</div>
+
+<div id="userStats"></div>
+
+<hr class="clear" />
+
+<div id="buttons"></div>
+
+<hr class="clear" />
+
+
+<div id="documentationAndForm">
+    <iframe src="null.htm" id="formPasswdSaveFix" name="formPasswdSaveFix" style="display:none"></iframe><!-- DAMN YOU CHROME!! DAMN YOU!!!! http://stackoverflow.com/a/9116737 -->
+    <form id="userApiDetailsForm" method="POST" action="" target="formPasswdSaveFix">
+        <fieldset>
+            <legend><span class="highlight">Enter your Habitica API details</span>
+            (from <a href="https://habitica.com/user/settings/api" target="_blank"> User Icon &gt; Settings &gt; API</a>)
+            </legend>
+            <label for="userId"><span>User ID</span>
+                <input type="text" name="userId" id="userId"> <!-- Value entfernen -->
+            </label>
+            <label for="apiToken"><span>API Token</span>
+                <input type="password" name="apiToken" id="apiToken" > <!-- Value entfernen -->
+            </label>
+
+            <input type="submit" value="Fetch My Data" />
+			<p class="highlight">Datenschutzerklärung:</p>
+			<ul>
+			Die Nutzung dieser Webseite erfolgt unter Angabe Ihrer User-ID und Ihres API-Tokens. Diese haben Sie von www.habitica.com als Zugangsdaten zum Online-Spiel Habitica erhalten. <br> 
+			Diese Webseite speichert Ihre Eingaben nicht. Ihre Eingaben dienen nur dem Zweck, auf den von Ihnen eingerichteten Account bei Habitica zuzugreifen. <br>
+			Der Hoster dieser Webseite speichert Server-Logs anonymisiert für 3 Monate zu statistischen Zwecken. Nach Ablauf der drei Monate werden die Daten gelöscht. 
+			In den ServerLogs werden Ihre IP-Adresse, Ihr verwendeter Browser, die Refferer-URL gespeichert. <br>  
+			Für allgemeine Risiken des Internetverkehrs wird keine Haftung übernommen. Angreifern kann es möglich sein, Ihre Eingaben abzufangen und so Rückschlüsse auf den bei Habitica 
+			hinterlegten Inhalt zu erlagen, incl. der von Ihnen dort verwendeten email-Adresse. 
+			</ul>
+            <p class="highlight">Privacy and security notes:</p>
+            <ul>
+			For using this website you need to input your User-ID and API-token. You received those from www.habitica.com as login-legitimations from Habitica. <br>
+			This website does not safe your input. Your input only serve the purpose to access your habitica account. <br>
+			The hoster of this website saves anoymised sever-logs for 3 months for statistical matters. After three months data is deleted. 
+			The server-logs save your ip-adress, your browser, refferer-url. 
+			For general risks of internet traffic liability is excluded. Attacers could be able to gather your input and draw conclusions to your data, thats saved in Habitica, your email adress included. 
+			  
+            <li>Your API Token is a password - do not share it with anyone, not even the maintainer of this page if you are seeking help.</li>
+            <li>This page does not save your User ID and API Token to any location, but your browser might, if it has been configured to
+            save form and password information. If you are using this page on a shared computer, you should clear any data that the browser
+            has saved.</li>
+            <li>This page will make changes to your Habitica accout. It changes equipped gear. If anything goes wrong, you will probably be
+			be able to change everything back using the official access paths (webpage, app).</li>
+            <li>Changes to the Habitica user data made on this webpage will take effect immediately on the official webpage or on the app. Visibility of changes 
+			occur after a sync there. </li>
+			<li>This page is not Habitica code. It's third party. Autor is @Piti (user of Habitica and member of the guild 'Aspiring Comrades' and 'Habitican Wardrobes').</li>
+            </ul>
+        </fieldset>
+    </form>
+</div><!-- end of div id="documentationAndForm" -->
+
+<div class="flex-displayContent">
+  <fieldset><div id="displayContent"><legend><h3>This page is about battle gear for citizens of Habitica:</h3></legend>
+  <br>
+   Habitican Wardrobes offers six wardrobes out of which a Habitican can choose to reach their goals faster. <br>
+   <br>
+   Known issues:
+   <br>
+   Two-handed weapons are not yet implemented.  <br>
+   Accessory is not taken in consideration. <br>
+   </div></fieldset>
+  
+
+
+</div>
+
+</div><!-- end of div id="outerFrame" -->
+</body>
+
+</html>
