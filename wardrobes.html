@@ -22,21 +22,26 @@ var tasksFromDb = {}; // holds tasks
 var serverUrl = 'https://habitica.com:443/api/v3';
 var userID     = '';
 var apiToken   = '';
-var equippedKeys = {};
-var blessing = 	   {"head": "b", "armor": "b", "weapon": "b", "shield": "b"};
-var initialGear =  {"head": "i", "armor": "i", "weapon": "i", "shield": "i"};
-var currentGear =  {"head": "c", "armor": "c", "weapon": "c", "shield": "c"};
-var intelligence = {"head": "i", "armor": "i", "weapon": "i", "shield": "i"};
-var perception =   {"head": "p", "armor": "p", "weapon": "p", "shield": "p"};
-var constitution = {"head": "c", "armor": "c", "weapon": "c", "shield": "c"};
-var strength     = {"head": "s", "armor": "s", "weapon": "s", "shield": "s"};
-var legendary 	 = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"}; // Nameless Helm, Jean Chalard's Noble Tunic, Stephen Weber's Shaft of the Dragon, Mustaine's Milestonemashing Morningstar
-var legendaryGearOwned = false;
-var wardrobeEquipped = "Initial";
+var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"}; // Nameless Helm, Jean Chalard's Noble Tunic, Stephen Weber's Shaft of the Dragon, Mustaine's Milestonemashing Morningstar
+var blessing = {};
+var intelligence = {};
+var perception = {};
+var constitution = {};
+var strength = {};
+var initialGear = {};
+var legendaryGearOwned = false; // see function checkLegendaryGear
+ var wardrobeEquipped = ['Initial'];
 var userName = '';
-var pageRunningCount = 0;
 var equipCount = 0;
 var equipCountSkip = 0;
+var gearLocation = ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]; 
+var attributes = ["int", "per", "str", "con"];
+var maxInt = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
+var maxPer = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
+var maxStr = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
+var maxCon = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
+var maxBles = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
+
 
 
 //////////////////////////////////////////////////////////////////////
@@ -59,8 +64,6 @@ function getUrlVars() {
     return vars;
 }
 
-
-
 //////////////////////////////////////////////////////////////////////
 ////   Login events      /////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -74,14 +77,9 @@ $('#userApiDetailsForm').submit(function(event){
 
 
 
-
-
-
 //////////////////////////////////////////////////////////////////////
 ////   Data Fetch Function   /////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-
-
 
 function fetchData() {
     //$('#loading .good').show();
@@ -113,8 +111,6 @@ function fetchData() {
         success: fetchTasksSuccess,
         error: fetchFailure
     });
-
-
 
     // fetch the user's own content (gear owned, etc):
 	$.ajax({
@@ -183,16 +179,22 @@ function parseData() {
 	var con = 0;
 	var dailyTotal = 0;
 	var dailyCompleted = 0;
-	var head = (user.items.gear.equipped.head);
-	var armor = (user.items.gear.equipped.armor);
-	var weapon = (user.items.gear.equipped.weapon);
-	var shield = (user.items.gear.equipped.shield);
+	wardrobeEquipped = ["Initial"];
+	var mostValueableTaskValue = 0;
+	var mostValueableTaskName = "";  
 
 	$('#headerExtras').html('<div id="userNameDisplay">' + user.profile.name + '(' + user.stats.class + ')</div>');	// display UserName and Class
 	evaluateTasks();
 	function evaluateTasks() {
-		for (var i in tasksFromDb) {
-       		if (tasksFromDb[i].type == 'daily' && tasksFromDb[i].isDue == true) {
+		var compareValue = 0;
+		for (var i in tasksFromDb) { 
+			if (tasksFromDb[i].type == 'habit') {
+				if (mostValueableTaskValue < tasksFromDb[i].value) {
+					mostValueableTaskValue = tasksFromDb[i].value; 
+					mostValueableTaskName = tasksFromDb[i].text; 
+				}
+       			} // endIf daily or habit
+			if (tasksFromDb[i].type == 'daily' && tasksFromDb[i].isDue == true) {
 				dailyTotal ++;
 				if (tasksFromDb[i].completed == true) {
 					dailyCompleted ++;
@@ -209,220 +211,182 @@ function parseData() {
 	}; // end of function checkLegendaryGear
 
 
-
-
 	getMaxGear(); // Searches for the best possible type of gear in means of INT and PER, that is being posessed by the user
 	function getMaxGear() {
-		var maxIntHead = 0;
-		var maxIntArmor = 0;
-		var maxIntShield = 0;
-		var maxIntWeapon = 0;
-		var maxPerHead = 0;
-		var maxPerArmor = 0;
-		var maxPerShield = 0;
-		var maxPerWeapon = 0;
-		var maxConHead = 0;
-		var maxConArmor = 0;
-		var maxConShield = 0;
-		var maxConWeapon = 0;
-		var maxStrHead = 0;
-		var maxStrArmor = 0;
-		var maxStrShield = 0;
-		var maxStrWeapon = 0;
-		var maxBlesHead = 0;
-		var maxBlesArmor = 0;
-		var maxBlesShield = 0;
-		var maxBlesWeapon = 0;
-		var ownedKeys = {};
-		var ownedGear = user.items.gear.owned; // Format: "nameOfEquipment": boolean,   // user.items.gear.owned = false might occur when item was owned once but lost due to death. Still to be implemted
-
+		var ownedKeys = {}; 
+		var ownedGear = user.items.gear.owned; // Format: "nameOfEquipment": boolean,   // user.items.gear.owned = false might occur when item was owned once but lost due to death. Still to be implemted	 
+	
+		// get rid of inventory lost due to death or character reset... 
+		for (var item in ownedGear){
+			if (ownedGear[item] === false) {delete ownedGear[item];} 
+			}
+		
 		for (var item in ownedGear){ // var item: Format: nameOfEquipment
 			ownedKeys[item] = content.gear.flat[item]; // Habiticas content information about each key
+				
+				// INT
+				var factor = 1; 
+				if (ownedKeys[item].klass == user.stats.class) {var factor = 1.5;} 
+				for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+					var gear = gearLocation[i];  // fromat gear: head_base_0 e.g.
+					if ((factor * ownedKeys[item].int) >= maxInt[gear] && ownedKeys[item].type == gear && ownedKeys[item].twoHanded != true) {
+						intelligence[gear] = ownedKeys[item].key; 
+						maxInt[gear] = (factor * ownedKeys[item].int);
+					} // end if  
+				} // end for var i in gearLocation
+				if (maxInt["headAccessory"] <= 2 && ownedGear["headAccessory_armoire_comicalArrow"] == true) {intelligence["headAccessory"] = "headAccessory_armoire_comicalArrow"; }
+				if (maxInt["back"] <= 2 && ownedGear["back_special_aetherCloak"] == true) {intelligence["back"] = "back_special_aetherCloak";}
+				if (maxInt["body"] <= 2 && ownedGear["body_special_aetherAmulet"] == true) {intelligence["body"] = "body_special_aetherAmulet";}
 
-			//separately search for head, armor, weapon, shield in
-			// INT
-			if ((ownedKeys[item].klass == 'mage' && user.stats.class == 'mage') || (ownedKeys[item].klass == 'healer' && user.stats.class == 'healer')){
-				var ownedKeyBonusInt = 1.5 * ownedKeys[item].int;
-				} else {
-				var ownedKeyBonusInt = ownedKeys[item].int;
-				}
-			if (ownedKeyBonusInt >= maxIntHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				intelligence.head = ownedKeys[item].key; // put best gear into wardrobe int
-				maxIntHead = ownedKeyBonusInt;
-			} // end of if
+				// PER
+				var factor = 1; 
+				if (ownedKeys[item].klass == user.stats.class) {var factor =1.5;}
+				for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+       		 		var gear = gearLocation[i];
+					if ((factor * ownedKeys[item].per) >= maxPer[gear] && ownedKeys[item].type == gear && ownedKeys[item].twoHanded != true) {
+						perception[gear] = ownedKeys[item].key; 
+						maxPer[gear] = (factor * ownedKeys[item].per);
+					}  // end if ownedGear[item]
+				} // end for var i in gearLocation
 
-			if (ownedKeyBonusInt >= maxIntArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				intelligence.armor = ownedKeys[item].key; // put best gear into wardrobe int
-				maxIntArmor = ownedKeyBonusInt;
-			} // end of if
+				// CON
+				var factor = 1; 
+				if (ownedKeys[item].klass ==user.stats.class ) {var factor = 1.5;}
+				for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+       	 			var gear = gearLocation[i];
+					if ((factor * ownedKeys[item].con) >= maxCon[gear] && ownedKeys[item].type == gear && ownedKeys[item].twoHanded != true) {
+						constitution[gear] = ownedKeys[item].key; 
+						maxCon[gear] = (factor * ownedKeys[item].con);
+					}  // end if
+				} // end for var in gearLocation 
+		
+				// STR
+				var factor = 1;
+				if (ownedKeys[item].klass == user.stats.class) {var factor = 1.5;}
+				for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+       		 		var gear = gearLocation[i];
+					if ((factor * ownedKeys[item].str) >= maxStr[gear] && ownedKeys[item].type == gear && ownedKeys[item].twoHanded != true) {
+						strength[gear] = ownedKeys[item].key; 
+						maxStr[gear] = (factor * ownedKeys[item].str);
+					}  // end if
+				} // end for var i in gearLocation
+				if (maxStr["back"] <= 2 && ownedGear["back_special_aetherCloak"] == true) {strength.back = "back_special_aetherCloak";}
+				if (maxStr["eyewear"] <= 2 && ownedGear["eyewear_special_aetherMask"] == true) {strength.eyewear = "eyewear_special_aetherMask";}
 
-			if (ownedKeyBonusInt >= maxIntShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				intelligence.shield = ownedKeys[item].key; // put best gear into wardrobe int
-				maxIntShield = ownedKeyBonusInt;
-			} // end of if
+				// Blessing for Healers INT+CON
+				var factor = 1; 
+				if (ownedKeys[item].klass == user.stats.class) {var factor = 1.5;} 
+				for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+       	 			var gear = gearLocation[i];
+					if ((factor * (ownedKeys[item].con + ownedKeys[item].int)) >= maxBles[gear] && ownedKeys[item].type == gear && ownedKeys[item].twoHanded != true) {
+						blessing[gear] = ownedKeys[item].key; 
+						maxBles[gear] = (factor * (ownedKeys[item].con + ownedKeys[item].int));
+					}  // end if
+				} // end for var i in gearLocation
 
-			if (ownedKeyBonusInt >= maxIntWeapon && ownedKeys[item].type == "weapon") {
-				if (ownedKeys[item].twoHanded == true) {} //shortcut twohanded .. comparison to be implemented later
-				else {
-					intelligence.weapon = ownedKeys[item].key; // put best gear into wardrobe int
-					maxIntWeapon = ownedKeyBonusInt;
-				}
-			} // end of if
-
-
-			// PER
-			// we need ownedKeys[item].per copied into ownedKeysBonusPer to prevent it from being corrupted
-			// ownedKeyBonusPer contains the per value of the respective item or the 1.5* per value if item confers class bonus
-			if ((ownedKeys[item].klass == 'rogue' && user.stats.class == 'rogue') || (ownedKeys[item].klass == 'mage' && user.stats.class == 'mage')){
-				var ownedKeyBonusPer = 1.5 * ownedKeys[item].per;
-				} else {
-				var ownedKeyBonusPer = ownedKeys[item].per;
-				}
-			if (ownedKeyBonusPer >= maxPerHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				perception.head = ownedKeys[item].key; // put best gear into wardrobe per
-				maxPerHead = ownedKeyBonusPer;
-			} // end of if
-
-			if (ownedKeyBonusPer >= maxPerArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				perception.armor = ownedKeys[item].key; // put best gear into wardrobe per
-				maxPerArmor = ownedKeyBonusPer;
-			} // end of if
-
-			if (ownedKeyBonusPer >= maxPerShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				perception.shield = ownedKeys[item].key; // put best gear into wardrobe per
-				maxPerShield = ownedKeyBonusPer;
-			} // end of if
-
-			if (ownedKeyBonusPer >= maxPerWeapon && ownedKeys[item].type == "weapon") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				if (ownedKeys[item].twoHanded) {} else {
-				perception.weapon = ownedKeys[item].key; // put best gear into wardrobe per
-				maxPerWeapon = ownedKeyBonusPer;}
-			} // end of if
-
-
-			// CON
-			// we need ownedKeys[item].con copied into ownedKeysBonusCon to prevent it from being corrupted
-			// ownedKeyBonusCon contains the con value of the respective item or the 1.5* con value if item confers class bonus
-			if ((ownedKeys[item].klass == 'healer' && user.stats.class == 'healer') || (ownedKeys[item].klass == 'warrior' && user.stats.class == 'warrior')){
-				var ownedKeyBonusCon = 1.5 * ownedKeys[item].con;
-				} else {
-				var ownedKeyBonusCon = ownedKeys[item].con;
-				}
-			if (ownedKeyBonusCon >= maxConHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				constitution.head = ownedKeys[item].key; // put best gear into wardrobe con
-				maxConHead = ownedKeyBonusCon;
-			} // end of if
-
-			if (ownedKeyBonusCon >= maxConArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				constitution.armor = ownedKeys[item].key; // put best gear into wardrobe con
-				maxConArmor = ownedKeyBonusCon;
-			} // end of if
-
-			if (ownedKeyBonusCon >= maxConShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				constitution.shield = ownedKeys[item].key; // put best gear into wardrobe con
-				maxConShield = ownedKeyBonusCon;
-			} // end of if
-
-			if (ownedKeyBonusCon >= maxConWeapon && ownedKeys[item].type == "weapon") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				if (ownedKeys[item].twoHanded) {} else {
-				constitution.weapon = ownedKeys[item].key; // put best gear into wardrobe con
-				maxConWeapon = ownedKeyBonusCon;}
-			} // end of if
-
-			// STR
-			// we need ownedKeys[item].str copied into ownedKeysBonusCon to prevent it from being corrupted
-			// ownedKeyBonusCon contains the con value of the respective item or the 1.5* con value if item confers class bonus
-			if ((ownedKeys[item].klass == 'warrior' && user.stats.class == 'warrior') || (ownedKeys[item].klass == 'rogue' && user.stats.class == 'rogue')){
-				var ownedKeyBonusStr = 1.5 * ownedKeys[item].str;
-				} else {
-				var ownedKeyBonusStr = ownedKeys[item].str;
-				}
-
-			if (ownedKeyBonusStr >= maxStrHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				strength.head = ownedKeys[item].key; // put best gear into wardrobe str
-				maxStrHead = ownedKeyBonusStr;
-			} // end of if
-
-			if (ownedKeyBonusStr >= maxStrArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				strength.armor = ownedKeys[item].key; // put best gear into wardrobe str
-				maxStrArmor = ownedKeyBonusStr;
-			} // end of if
-
-			if (ownedKeyBonusStr >= maxStrShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				strength.shield = ownedKeys[item].key; // put best gear into wardrobe str
-				maxStrShield = ownedKeyBonusStr;
-			} // end of if
-
-			if (ownedKeyBonusStr >= maxStrWeapon && ownedKeys[item].type == "weapon") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				if (ownedKeys[item].twoHanded) {} else {
-				strength.weapon = ownedKeys[item].key; // put best gear into wardrobe str
-				maxStrWeapon = ownedKeyBonusStr;}
-			} // end of if
-
-
-
-
-		// Blessing wardrobe for Healers (maximizes INT+CON)
-
-
-
-		// Blessing for Healers INT+CON
-			// we need ownedKeys[item].str copied into ownedKeysBonusBles to prevent it from being corrupted
-			// ownedKeyBonusBles contains the con+int value of the respective item or the 1.5* (con+int) value if item confers class bonus
-			if (ownedKeys[item].klass == 'healer' && user.stats.class == 'healer'){
-				var ownedKeyBonusBles = 1.5 * (ownedKeys[item].con + ownedKeys[item].int);
-				} else {
-				var ownedKeyBonusBles = ownedKeys[item].con + ownedKeys[item].int;
-				}
-
-			if (ownedKeyBonusBles >= maxBlesHead && ownedKeys[item].type == "head") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				blessing.head = ownedKeys[item].key; // put best gear into wardrobe str
-				maxBlesHead = ownedKeyBonusBles;
-			} // end of if
-
-			if (ownedKeyBonusBles >= maxBlesArmor && ownedKeys[item].type == "armor") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				blessing.armor = ownedKeys[item].key; // put best gear into wardrobe str
-				maxBlesArmor = ownedKeyBonusBles;
-			} // end of if
-
-			if (ownedKeyBonusBles >= maxBlesShield && ownedKeys[item].type == "shield") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				blessing.shield = ownedKeys[item].key; // put best gear into wardrobe str
-				maxBlesShield = ownedKeyBonusBles;
-			} // end of if
-
-			if (ownedKeyBonusBles >= maxBlesWeapon && ownedKeys[item].type == "weapon") { // theoreticcally it is neccessary to check if an equally valuable part of Gear has better attributes in other areas
-				if (ownedKeys[item].twoHanded) {} else {
-				blessing.weapon = ownedKeys[item].key; // put best gear into wardrobe str
-				maxBlesWeapon = ownedKeyBonusBles;}
-			} // end of if
 		} // end for var Item in ownedGear
-
-
-		compareGear();
-	} // end of getMaxGear
-
-	function compareGear(){ //checks if the currently equipped gear is equal to one of the wardrobes
-		if (user.items.gear.equipped.head == intelligence.head && user.items.gear.equipped.armor == intelligence.armor && user.items.gear.equipped.shield == intelligence.shield && user.items.gear.equipped.weapon == intelligence.weapon){
-			wardrobeEquipped = 'Intelligence';
-		}
-		if (user.items.gear.equipped.head == perception.head && user.items.gear.equipped.armor == perception.armor && user.items.gear.equipped.shield == perception.shield && user.items.gear.equipped.weapon == perception.weapon){
-			wardrobeEquipped = 'Perception';
-		}
-		if (user.items.gear.equipped.head == constitution.head && user.items.gear.equipped.armor == constitution.armor && user.items.gear.equipped.shield == constitution.shield && user.items.gear.equipped.weapon == constitution.weapon){
-			wardrobeEquipped = 'Constitution';
-		}
-		if (user.items.gear.equipped.head == strength.head && user.items.gear.equipped.armor == strength.armor && user.items.gear.equipped.shield == strength.shield && user.items.gear.equipped.weapon == strength.weapon){
-			wardrobeEquipped = 'Strength';
-		}
-		if (user.items.gear.equipped.head == legendary.head && user.items.gear.equipped.armor == legendary.armor && user.items.gear.equipped.shield == legendary.shield && user.items.gear.equipped.weapon == legendary.weapon){
-			wardrobeEquipped = 'Legendary';
-		}
-		if (user.items.gear.equipped.head == blessing.head && user.items.gear.equipped.armor == blessing.armor && user.items.gear.equipped.shield == blessing.shield && user.items.gear.equipped.weapon == blessing.weapon){
-			wardrobeEquipped = 'Blessing';
-		}
-			
-	}; // end of compareGear
 	
+	
+		//second run: checking if there is a two-handed weapon more valueable than single handed weapon + shield
+		//content.gear.flat["weapon_wizard_6"].int = 35; // corrupting one entry for testing purpose and set its INT higher as 32 so it will be chosen... delete if works
+		var weaponIntPoints = 0; 
+		var shieldIntPoints = 0; 
+		var weaponPlusShieldIntPoints = 0;
+		var twoHandedIntPoints = 0;
+		var weaponPerPoints = 0; 
+		var shieldPerPoints = 0; 
+		var weaponPlusShieldPerPoints = 0; 
+		var twoHandedPerPoints = 0;  
+		
+		//INT          //will it be necessary to calculate PER, STR, etc. also?
+		if ('weapon' in intelligence) { 
+			weaponIntPoints = ownedKeys[intelligence["weapon"]].int;
+			if (ownedKeys[intelligence.weapon].klass == user.stats.class) {weaponIntPoints += 0.5 * weaponIntPoints; } 
+			}
+		 	if ('shield' in intelligence) {
+			shieldIntPoints  = ownedKeys[intelligence["shield"]].int;
+			if (ownedKeys[intelligence.shield].klass == user.stats.class) {shieldIntPoints += 0.5 * shieldIntPoints; } 
+			} 
+			weaponPlusShieldIntPoints = weaponIntPoints + shieldIntPoints; 
+		
+		for (var item in ownedGear){ // var item: Format: nameOfEquipment
+			ownedKeys[item] = content.gear.flat[item]; // Habiticas content information about each key	
+			twoHandedIntPoints = ownedKeys[item].int;	
+			if (ownedKeys[item].klass == user.stats.class) {twoHandedIntPoints += 0.5 * twoHandedIntPoints; }
+					
+			// if item is not in inventory, set values int, str, per, con to zero so they are not taken in consideration to equip
+			// not sure if this is needed... ownedKeys is already set to zero, but might be set back due to above: ownedKeys[item] = content.gear.flat[item]; so calulate this a second time!
+			if (ownedGear[item] == false) {
+					ownedKeys[item].int = 0;
+					ownedKeys[item].per = 0;
+					ownedKeys[item].con = 0; 
+					ownedKeys[item].str = 0;  
+					} 
+			
+			if (ownedKeys[item].twoHanded == true && twoHandedIntPoints > weaponPlusShieldIntPoints) {
+						intelligence.weapon = item; 
+						delete intelligence.shield;  // twoHanded weapon doesn't allow for a shield
+			} // end if 
+			
+			
+			
+			
+			
+			//PER          //will it be necessary to calculate PER, STR, etc. also?
+		if ('weapon' in perception) { 
+			weaponPerPoints = ownedKeys[perception["weapon"]].per;
+			if (ownedKeys[perception.weapon].klass == user.stats.class) {weaponPerPoints += 0.5 * weaponPerPoints; } 
+			}
+		if ('shield' in perception) {
+			shieldPerPoints  = ownedKeys[perception["shield"]].per;
+			if (ownedKeys[perception.shield].klass == user.stats.class) {shieldPerPoints += 0.5 * shieldPerPoints; } 
+			} 
+			weaponPlusShieldPerPoints = weaponPerPoints + shieldPerPoints; 
+		
+		for (var item in ownedGear){ // var item: Format: nameOfEquipment
+			ownedKeys[item] = content.gear.flat[item]; // Habiticas content information about each key	
+			twoHandedPerPoints = ownedKeys[item].per;	
+			if (ownedKeys[item].klass == user.stats.class) {twoHandedPerPoints += 0.5 * twoHandedPerPoints; }
+					
+			// if item is not in inventory, set values int, str, per, con to zero so they are not taken in consideration to equip
+			// not sure if this is needed... ownedKeys is already set to zero, but might be set back due to above: ownedKeys[item] = content.gear.flat[item]; so calulate this a second time!
+			if (ownedGear[item] == false) {
+					ownedKeys[item].int = 0;
+					ownedKeys[item].per = 0;
+					ownedKeys[item].con = 0; 
+					ownedKeys[item].str = 0;  
+					} 
+			
+			if (ownedKeys[item].twoHanded == true && twoHandedPerPoints > weaponPlusShieldPerPoints) {
+						perception.weapon = item; 
+						delete perception.shield;  // twoHanded weapon doesn't allow for a shield
+			} // end if
+			
+			
+		}	
+		} // end second run: for var item in ownedGear 
+ 
+ 		// get array with all wardrobes currently equipped 
+        if (compareGear(intelligence) == true) {wardrobeEquipped.push('Intelligence');};
+        if (compareGear(perception) == true) {wardrobeEquipped.push('Perception');};
+        if (compareGear(strength) == true) {wardrobeEquipped.push('Strength');};
+        if (compareGear(blessing) == true) {wardrobeEquipped.push('Blessing');};
+        if (compareGear(constitution) == true) {wardrobeEquipped.push('Constitution');};
+        if (compareGear(legendary) == true) {wardrobeEquipped.push('Legendary');};
+        if (wardrobeEquipped.length > 1) {wardrobeEquipped = wardrobeEquipped.filter(function(item){return item !== 'Initial'}); console.log("Initial killed");}; // get rid of 'Initial' in case any other wardrobe matches
+        } // end of getMaxGear
+ 
+        function compareGear(specificWardrobe){ //checks if the currently equipped gear is equal to one of the wardrobes
+               var equipped = true
+               for (var gear in specificWardrobe){
+                       if (specificWardrobe[gear] != user.items.gear.equipped[gear]) {
+                               equipped = false; 
+                       } // end if    
+               } // end for gear in specificWardrobe
+               return equipped; 
+        }; // end of function compareGear
+  	
+		
 	function calculateAttributes(wardrobe) {
 		var equipment = {"int" : 0, "per" : 0, "str" : 0, "con" : 0};
 		var bonus = {"int" : 0, "per" : 0, "str" : 0, "con" : 0};
@@ -433,25 +397,33 @@ function parseData() {
 		var perfectDay = 0;
 		var manaRefresh = 0;
 		var impactSkill = 0;
-		var toolsOfTheTrade = 0;
+		var toolsOfTheTrade = 0; //rogue
+		var stealth = 0; 
+		var backstab = 0; 
+		var pickpocket = 0; 
 		var blessing = 0;
 		var protectiveAura = 0; 
 		var valorousPresence = 0;
-		var earthquake = 0; 
+		var earthquake = 0;  // mage
+		var burstOfFlames = 0; 
+		var etherealSurge = 0;
+		var chillingFrost = 0; 
 		var wardrobeKeys = {};
-    	for (var i in wardrobe) { //wardrobe is an altered copy of user.items.gear.equipped
-       	 	var key = wardrobe[i];
-         	wardrobeKeys[key] = content.gear.flat[key];
-			if (wardrobeKeys[key].klass == user.stats.class){
-				bonus.int += 0.5 * wardrobeKeys[key].int;
-				bonus.str += 0.5 * wardrobeKeys[key].str;
-				bonus.per += 0.5 * wardrobeKeys[key].per;
-				bonus.con += 0.5 * wardrobeKeys[key].con;
-			}
-			equipment.int += wardrobeKeys[key].int;
-			equipment.per += wardrobeKeys[key].per;
-			equipment.str += wardrobeKeys[key].str;
-			equipment.con += wardrobeKeys[key].con;
+    	for (var typeOfItem in wardrobe) { //wardrobe is an altered copy of user.items.gear.equipped and contains optimized gear for INT, STR, CON, PER, BLES
+       	 	var key = wardrobe[typeOfItem]; // format key: weapon_base_0 e.g.
+			wardrobeKeys[key] = content.gear.flat[key];
+			if (typeOfItem in wardrobe === true && typeof wardrobeKeys[key] != 'undefined') {
+				if (wardrobeKeys[key].klass == user.stats.class){
+					bonus.int += 0.5 * wardrobeKeys[key].int;
+					bonus.str += 0.5 * wardrobeKeys[key].str;
+					bonus.per += 0.5 * wardrobeKeys[key].per;
+					bonus.con += 0.5 * wardrobeKeys[key].con;
+					}
+				equipment["int"] += wardrobeKeys[key].int;
+				equipment["per"] += wardrobeKeys[key].per;
+				equipment["str"] += wardrobeKeys[key].str;
+				equipment["con"] += wardrobeKeys[key].con;
+			} // end if typeof wardrobeKeys ... undefined
 		}; // end for
 		level = Math.floor(user.stats.lvl / 2);
 		perfectDay = Math.round(user.stats.lvl / 2);
@@ -476,7 +448,6 @@ function parseData() {
 		var habit = 0.0025 * manaMax;
 		var dailyToDo = 0.01 * manaMax; 
 		if (manaMax < 100) {habit = 0.25; dailyToDo = 1;}
-		//var currentManaPercent = Math.round(100 * currentMana / manaMax)+'%';
 		var manaMaxAfterCronCompletionRate = Math.round(2 * totalUnbuffed.int + 30); // at cron on a non-Perfect Day, all buffs are reset to zero
 		var manaMaxAfterCronPerfectDay 	   = Math.round(2 * totalPerfectDay.int + 30)//;  + Math.round(level / 2); // at cron on a Perfect Day all buffs are reset to zero, except Perfect Day buff
 		var manaAfterCronCompletionRate	   = Math.round(currentMana + manaRefreshCompletionRate); // before checking if manaMaxAfterCron is exceeded.
@@ -495,25 +466,39 @@ function parseData() {
 			manaCapPerfectDay = manaAfterCronPerfectDay - manaMaxAfterCronPerfectDay;
 		}
 
+		//rogue
 		toolsOfTheTrade = Math.round((100 * (level + equipment.per + user.stats.per + bonus.per)) / (level + equipment.per + user.stats.per + bonus.per + 50));
+		stealth = Math.ceil(0.64 * dailyTotal * total.per / (total.per + 55));
+		backstab = (mostValueableTaskValue + 1) +( 0.5 * total.str); 
+		pickpocket = (mostValueableTaskValue + 1) + (0.5 * total.per);  
+		//healer
 		blessing = Math.round((total.int + total.con + 5) * 0.04);
 		protectiveAura = Math.round((200 * totalUnbuffed.con) / (200 + totalUnbuffed.con));
+		healingLight =  Math.ceil((total.con + total.int + 5) * 0.075); 
+		searingBrightness = Math.round(4 * (total.int / (total.int + 40))); 
+		//warrior
+		brutalSmashTask = Math.round((2.5 * total.str / (total.str + 35)));
+		brutalSmashDamage = Math.round(55 * total.str / (total.str + 70));
 		valorousPresence = Math.ceil((20 * totalUnbuffed.str) / (200 + totalUnbuffed.str));
-		earthquake = Math.round((30 * totalUnbuffed.int) / (200 + totalUnbuffed.int));
-		
+		defensiveStance = Math.ceil(40 * totalUnbuffed.con / (totalUnbuffed.con + 200));
+		intimidatingGaze = Math.ceil(24 * totalUnbuffed.con / (totalUnbuffed.con + 200)); 
+		 //mage
+		earthquake = Math.ceil((30 * totalUnbuffed.int) / (200 + totalUnbuffed.int));
+		burstOfFlames = (mostValueableTaskValue +1) * 0.075 * total.int;
+		etherealSurge = Math.ceil((total.int * 25) / (total.int + 125)); 
 		htmlStats +='<section class="container">' +
 					'<div class="one"><section class="innerContainer"><div class="innerOne"><a style="color: #f74e52; vertical-align: middle">STR:</a><h3>' + total.str + '</h3></div>' +
-					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.str + '<br></a><a>Bonus: ' + bonus.str + '<br></a><a>Allocation: ' + user.stats.str + '<br></a><a>Buffs: ' + user.stats.buffs.str + '</a></div></section></div>' +
+					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment["str"] + '<br></a><a>Bonus: ' + bonus.str + '<br></a><a>Allocation: ' + user.stats.str + '<br></a><a>Buffs: ' + user.stats.buffs.str + '</a></div></section></div>' +
 					
 					'<div class="two"><section class="innerContainer"><div class="innerOne"><a style="color: #2995cd; vertical-align: middle">INT:</a><h3>' + total.int + '</h3></div>' +
-					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.int + '<br></a><a>Bonus: ' + bonus.int + '<br></a><a>Allocation: ' + user.stats.int + '<br></a><a>Buffs: ' + user.stats.buffs.int + '</a></div></section></div>' +
+					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment["int"] + '<br></a><a>Bonus: ' + bonus.int + '<br></a><a>Allocation: ' + user.stats.int + '<br></a><a>Buffs: ' + user.stats.buffs.int + '</a></div></section></div>' +
 					'</section>';
 		htmlStats +='<section class="container">' +
 					'<div class="one"><section class="innerContainer"><div class="innerOne"><a style="color: #ffa623; vertical-align: middle">CON:</a><h3>' + total.con + '</h3></div>' +
-					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.con + '<br></a><a>Bonus: ' + bonus.con + '<br></a><a>Allocation: ' + user.stats.con + '<br></a><a>Buffs: ' + user.stats.buffs.con + '</a></div></section></div>' +
+					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment["con"] + '<br></a><a>Bonus: ' + bonus.con + '<br></a><a>Allocation: ' + user.stats.con + '<br></a><a>Buffs: ' + user.stats.buffs.con + '</a></div></section></div>' +
 					
 					'<div class="two"><section class="innerContainer"><div class="innerOne"><a style="color: #4f2a93; vertical-align: middle">PER:</a><h3>' + total.per + '</h3></div>' +
-					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.per + '<br></a><a>Bonus: ' + bonus.per + '<br></a><a>Allocation: ' + user.stats.per + '<br></a><a>Buffs: ' + user.stats.buffs.per + '</a></div></section></div>' +
+					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment["per"] + '<br></a><a>Bonus: ' + bonus.per + '<br></a><a>Allocation: ' + user.stats.per + '<br></a><a>Buffs: ' + user.stats.buffs.per + '</a></div></section></div>' +
 					'</section>';
 		// Progression of Mana: 
 		var manaLostOnCapCompletionRate = (currentMana + manaRefreshCompletionRate - manaMaxAfterCronCompletionRate);
@@ -558,13 +543,96 @@ function parseData() {
 					'</div></section>';
 		// Skills
 		htmlStats +='<section class="container" style="margin: 5px">'+
-					'<div class="one" style="background-color: #ffffff"> Impact of Skills<br>';
-					if (user.stats.class == 'rogue') {htmlStats += 'Tools of the Trade: ' + toolsOfTheTrade;} //continue Flexbox 2, 4, 6
-					if (user.stats.class == 'wizard') {htmlStats += 'Earthquake: ' + earthquake;}
-					if (user.stats.class == 'healer') {htmlStats += 'Protective Aura: ' + protectiveAura + '<br> Blessing: ' + blessing;}
-					if (user.stats.class == 'warrior') {htmlStats += 'Valorous Presence: ' + valorousPresence;}
+					'<div class="skills" style="background-color: #ffffff"> Impact of Skills<br>';
+					// ROGUE
+					if (user.stats.class == 'rogue') {
+						var x = totalUnbuffed.per;
+						var y = toolsOfTheTrade; 
+						var high = 0; 
+						var low = 0;
+						// Schleife nach unten  
+						while (y == toolsOfTheTrade) {
+							x--;
+							y  = Math.round((100 * x) / (50 + x));
+							}
+							low = x + 1; 
+						// Schleife nach oben  
+						var x = totalUnbuffed.per;
+						var y = toolsOfTheTrade; 
+						while (y == toolsOfTheTrade) {
+							x++;
+							y  = Math.round((100 * x) / (50 + x));
+							}
+							high = x - 1; 
+						htmlStats += '<font size="-2">Tools of the Trade: +' + toolsOfTheTrade +'PER<br>';	
+						htmlStats += 'PER<sub>unb</sub>=' + totalUnbuffed.per + '&#8712;{' + low + ',..,' + high + '}<br>';
+						htmlStats += 'Stealth: ' + stealth + ' dailies<br>';  
+						var xp = Math.round(75*backstab / (backstab + 50)); 
+						var gold = Math.round(18 * backstab / (backstab + 75));
+						htmlStats += 'Backstab: ' + xp + 'XP + ' + gold + 'GP<br>' ;
+						var gold = Math.round(25 * pickpocket / (pickpocket + 75));
+						htmlStats +='Pickpocket: ' + gold + 'GP</font>';
+						} // end if ROGUE & continue Flexbox 2, 4, 6
+					//MAGE
+					if (user.stats.class == 'wizard') {
+						var x = totalUnbuffed.int;
+						var y = earthquake; 
+						var high = 0; 
+						var low = 0;
+						// Schleife nach unten  
+						while (y == earthquake) {
+							x--;
+							y  = Math.round((30 * x) / (200 + x));
+							}
+							low = x + 1; 
+						// Schleife nach oben  
+						var x = totalUnbuffed.int;
+						var y = earthquake; 
+						while (y == earthquake) {
+							x++;
+							y  = Math.round((30 * x) / (200 + x));
+							}
+							high = x - 1; 
+						htmlStats += '<font size="-2">Earthquake: +' + earthquake + 'INT<br>';	
+						htmlStats += 'INT<sub>unb</sub> = ' + totalUnbuffed.int  + '&#8712;{' + low + ',..,' + high + '}<br>';
+						htmlStats += 'Eth.Surge : +' + etherealSurge + 'mana<br>';  
+						var xp = Math.round(75 * burstOfFlames / (burstOfFlames + 37.5));
+						htmlStats += 'BrstfFlms: ' + total.int / 10 + 'dmg, ' + xp + 'XP<br></font>'; 
+						}
+					if (user.stats.class == 'healer') {
+						htmlStats += '<font sitze ="-2">Healing Light: +' + healingLight + 'HP <br>';
+						htmlStats += 'Sear.Brightness: ' + searingBrightness + '<br>'; 
+						htmlStats += 'Protective Aura: +' + protectiveAura + 'CON<br>';
+						htmlStats += 'Blessing: +' + blessing + 'HP</fron>';
+						}
+					//WARRIOR
+					if (user.stats.class == 'warrior') {
+						htmlStats += '<font size="-2">BrtSmsh: ' + brutalSmashTask + 'TskVal, +' + brutalSmashDamage + 'dmg<br>'; 
+						htmlStats += 'DefStance: +' + defensiveStance + 'CON<sub>You</sub><br>'; 
+						var x = totalUnbuffed.str;
+						var y = valorousPresence; 
+						var high = 0; 
+						var low = 0;
+						// Schleife nach unten  
+						while (y == valorousPresence) {
+							x--;
+							y  = Math.round((20 * x) / (200 + x));
+							}
+							low = x + 1; 
+						// Schleife nach oben  
+						var x = totalUnbuffed.str;
+						var y = valorousPresence; 
+						while (y == valorousPresence) {
+							x++;
+							y  = Math.round((20 * x) / (200 + x));
+							}
+							high = x - 1; 
+						htmlStats += 'Val.Pres.: +' + valorousPresence + 'STR<sub>Party</sub><br>';	
+						htmlStats += 'STR<sub>unb</sub> = ' + totalUnbuffed.str  + '&#8712;{' + low + ',..,' + high + '}<br>';
+						htmlStats +='Int.Gaze: +' + intimidatingGaze + 'CON<sub>Party</sub></font>';
+						} // end if WARRIOR
 		htmlStats +='</div>'+
-					'<div class="two" style="background-color: #ffffff"> Maximum Mana: ' + manaMax + '<br>' +
+					'<div class="mana" style="background-color: #ffffff"> Maximum Mana: ' + manaMax + '<br>' +
 					'Mana refresh ...<br>' +
 					'- per Habit: ' + (Math.round((habit * 100)) / 100) + '<br>' +
 					'- per Daily: ' + (Math.round((dailyToDo * 100)) / 100) + '<br>' +
@@ -583,219 +651,125 @@ function parseData() {
 //// calculate and display wardrobes and stats
 //////////////////////////////
 
+function picsToFlexbox(copyGear) {
+	htmlStats +='<br>'; 	
+		for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+       	 	var gear = gearLocation[i];
+			if (gear in copyGear === true && typeof copyGear[gear] != 'undefined' ) {
+					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[gear] + '.png">' + 
+  					'<p class="description">' + content.gear.flat[copyGear[gear]].text +
+					'<br>INT: ' + content.gear.flat[copyGear[gear]].int + ' PER: ' + content.gear.flat[copyGear[gear]].per +
+					'<br>STR: ' + content.gear.flat[copyGear[gear]].str + ' CON: ' + content.gear.flat[copyGear[gear]].con + '</p>' ;
+					} // end if copyGear[gear]
+			} // end for var i in gearLocation
+	htmlStats +='</a></div>'; // end single box (flexbox 2 - intelligence)
+	
+} // end function picsToFlexboxes
+
+
 	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var
+	legendary.headAccessory = copyGear.headAccessory; // Accessory in legendary is deriven from effective equipment
+	legendary.back = copyGear.back;
+	legendary.body = copyGear.body;
+	legendary.eyewear = copyGear.eyewear;
+		
 	htmlStats = '<div class="flex-container">'; 
+	
 	//start flexbox 1
+	// initialGear: 
 	htmlStats += '<div id="Initial" style="background-color: #cccccc"><h3>Equipped Gear:</h3>'; 
 	calculateAttributes(copyGear); // continue with content of flexbox 1 there
-	htmlStats +='<br>' +
-				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + user.items.gear.equipped.head + '.png">'+
-				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + user.items.gear.equipped.armor + '.png">'+
-				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + user.items.gear.equipped.weapon + '.png">'+
-				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + user.items.gear.equipped.shield + '.png">'+
-				'</div>'; //end single box
+	htmlStats +='<br>'; 	
+		for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+       	 	var gear = gearLocation[i];
+			if (gear in copyGear === true) {	
+					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[gear] + '.png">' + 
+  					'<p class="description">' + content.gear.flat[copyGear[gear]].text +
+					'<br>INT: ' + content.gear.flat[copyGear[gear]].int + ' PER: ' + content.gear.flat[copyGear[gear]].per +
+					'<br>STR: ' + content.gear.flat[copyGear[gear]].str + ' CON: ' + content.gear.flat[copyGear[gear]].con + '</p>' ;
+					} // end if copyGear[gear]
+			} // end for var i in gearLocation
+	htmlStats +='</a></div>'; // end single box (flexbox 2, 3, ...6)
 
 
 	// start Flexbox 2
+	// INTELLIGENCE
 	htmlStats +='<div id="Intelligence" style="background-color: #2995cd"><h3>Wardrobe Intelligence:  <input id="INT" type="submit" value=" Equip "></h3>'; //e0ffff
-	copyGear.head = intelligence.head; // corrupting copyGear with wardrobes gear -- pendejo doesn't pollute user.items.gear.equipped anymore because of deep copying it to copyGear!
-	copyGear.armor = intelligence.armor;
-	copyGear.weapon = intelligence.weapon;
-	copyGear.shield = intelligence.shield;
+	// copy intelligence to copyGear so not to pullute user.items.gear.equipped anymore. 
+	copyGear = {};
+	gearLocation.forEach(function(gear) {
+		if (gear in intelligence) {
+				copyGear[gear] = intelligence[gear];
+				}
+		})
 	calculateAttributes(copyGear);
-	htmlStats +='<br>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.head].text +
-				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
-				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
-				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
-				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
-				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
-				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
-				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
-				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
-				'</a>' +
-				'</div>'; //end single box
+	picsToFlexbox(copyGear); 
+	
+	
+	// start flexbox 3
+	// PERCEPTION
 	htmlStats +='<div id="Perception" style="background-color: #4f2a93"; border: solid><h3>Wardrobe Perception:  <input id="PER" type="submit" value=" Equip "></h3>'; //continue Flexbox 5 ffdfff
-	copyGear.head = perception.head;
-	copyGear.armor = perception.armor;
-	copyGear.weapon = perception.weapon;
-	copyGear.shield = perception.shield;
-	//console.log('Wardrobe Perception : ' + JSON.stringify(copyGear));
+	copyGear = {};
+	gearLocation.forEach(function(gear) {
+		if (gear in perception) {
+				copyGear[gear] = perception[gear];
+				}
+		})
 	calculateAttributes(copyGear);
-	htmlStats +='<br>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.head].text +
-				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
-				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
-				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
-				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
-				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
-				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
-				'</a>' + '<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
-				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
-				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
-				'</a>' +
-				'</div>'; //end single box
-
+	picsToFlexbox(copyGear); 
+	
+		
+	// start Flexbox 4
+	// STRENGTH
 	htmlStats +='<div id="Strength" style="background-color: #f74e52"><h3>Wardrobe Strength:  <input id="STR" type="submit" value=" Equip "></h3>'; //continue Flexbox 7 ff9999
-	copyGear.head = strength.head;
-	copyGear.armor = strength.armor;
-	copyGear.weapon = strength.weapon;
-	copyGear.shield = strength.shield;
-	//console.log('Wardrobe Strength : ' + JSON.stringify(copyGear));
+	copyGear = {};
+	gearLocation.forEach(function(gear) {
+		if (gear in strength) {
+				copyGear[gear] = strength[gear];
+				}
+		})
 	calculateAttributes(copyGear);
-	htmlStats +='<br>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.head].text +
-				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
-				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
-				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
-				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
-				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
-				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
-				'</a>' + '<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
-				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
-				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
-				'</a>' +
-				'</div>'; //end single box
-
+	picsToFlexbox(copyGear); 
+	
+	
+	// start Flexbox 5 
+	// CONSTITUTION
 	htmlStats +='<div id="Constitution" style="background-color: #ffa623"><h3>Wardrobe Constitution:  <input id="CON" type="submit" value=" Equip "></h3>'; //continue Flexbox 9 f9f9c9
-	copyGear.head = constitution.head;
-	copyGear.armor = constitution.armor;
-	copyGear.weapon = constitution.weapon;
-	copyGear.shield = constitution.shield;
-	//console.log('Wardrobe Strength : ' + JSON.stringify(copyGear));
+	copyGear = {};
+	gearLocation.forEach(function(gear) {
+		if (gear in constitution) {
+				copyGear[gear] = constitution[gear];
+				}
+		})
 	calculateAttributes(copyGear);
-	htmlStats +='<br>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.head].text +
-				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
-				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
-				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
-				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
-				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
-				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
-				'</a>' + '<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
-				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
-				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
-				'</a>' +
-				'</div>'; //end single box
-
+	picsToFlexbox(copyGear); 	
+	
+	// Start Flexbox 6
+	// BLESSING
 	htmlStats +='<div id="Blessing" style="background-color: #f9f9c9"><h3>Wardrobe Blessing:  <input id="BLE" type="submit" value=" Equip "></h3>'; //continue Flexbox 9
-	copyGear.head = blessing.head;
-	copyGear.armor = blessing.armor;
-	copyGear.weapon = blessing.weapon;
-	copyGear.shield = blessing.shield;
-	//console.log('Wardrobe Strength : ' + JSON.stringify(copyGear));
+	copyGear = {};
+	gearLocation.forEach(function(gear) {
+		if (gear in blessing) {
+				copyGear[gear] = blessing[gear];
+				}
+		})
 	calculateAttributes(copyGear);
-	htmlStats +='<br>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.head].text +
-				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
-				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
-				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
-				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
-				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
-				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
-				'</a>' + '<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
-				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
-				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
-				'</a>' +
-				'</div>'; //end single box
-
-
+	picsToFlexbox(copyGear); 
+	
+	// Start Flexbox 7
+	// LEGENDARY
 	htmlStats +='<div id="Legendary" style="background-color: #aabb88"><h3>Wardrobe Legendary: ';
 	if (legendaryGearOwned == true) {htmlStats +='<input id="LEG" type="submit" value=" Equip ">'}
 	htmlStats += '</h3>'; //continue Flexbox 9
-	copyGear.head = legendary.head;
-	copyGear.armor = legendary.armor;
-	copyGear.weapon = legendary.weapon;
-	copyGear.shield = legendary.shield;
+	copyGear = {};
+	gearLocation.forEach(function(gear) {
+		if (gear in legendary) {
+				copyGear[gear] = legendary[gear];
+				}
+		})
 	calculateAttributes(copyGear);
-	htmlStats +='<br>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.head + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.head].text +
-				'<br>INT: ' + content.gear.flat[copyGear.head].int + ' PER: ' + content.gear.flat[copyGear.head].per +
-				'<br>STR: ' + content.gear.flat[copyGear.head].str + ' CON: ' + content.gear.flat[copyGear.head].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.armor + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.armor].text +
-				'<br>INT: ' + content.gear.flat[copyGear.armor].int + ' PER: ' + content.gear.flat[copyGear.armor].per +
-				'<br>STR: ' + content.gear.flat[copyGear.armor].str + ' CON: ' + content.gear.flat[copyGear.armor].con + '</p>' +
-				'</a>' +
-				'<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.weapon + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.weapon].text +
-				'<br>INT: ' + content.gear.flat[copyGear.weapon].int + ' PER: ' + content.gear.flat[copyGear.weapon].per +
-				'<br>STR: ' + content.gear.flat[copyGear.weapon].str + ' CON: ' + content.gear.flat[copyGear.weapon].con + '</p>' +
-				'</a>' + '<a class="wrap">' +
-  				'<img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear.shield + '.png">'+
-  				'<p class="description">' + content.gear.flat[copyGear.shield].text +
-				'<br>INT: ' + content.gear.flat[copyGear.shield].int + ' PER: ' + content.gear.flat[copyGear.shield].per +
-				'<br>STR: ' + content.gear.flat[copyGear.shield].str + ' CON: ' + content.gear.flat[copyGear.shield].con + '</p>' +
-				'</a>' +
-				'</div>'; //end single box
-
+	picsToFlexbox(copyGear); 
+	
 
 	// Flexbox for info about which wardrobe is currently equipped and for some buttons
 	htmlStats +='<div id="Overview and Buttons">You are wearing:' +
@@ -806,7 +780,8 @@ function parseData() {
 				'<div id="intelli">Wardrobe INT</div>' +
 				'<div id="constit">Wardrobe CON</div>' +
 				'<div id="legenda">Legendary wardrobe</div>' +
-				'<div> You have ' + dailyCompleted + ' of ' + dailyTotal + ' dailies completed.</div>' +
+				'<div>You have ' + dailyCompleted + ' of ' + dailyTotal + ' dailies completed.<div></div></div>' +
+				'<div>Your most valueable taks is: </div><div> ' + mostValueableTaskName + '<div></div><div> with a value of: ' + Math.round(mostValueableTaskValue) + '</div><div></div>' +
 				'<input id="a" type="submit" value="Content"><br>' +
 	 			'<input id="b" type="submit" value="User data"><br>' +
 				'<input id="TAS" type="submit" value="Tasks"><br>' +
@@ -826,6 +801,12 @@ function parseData() {
 			var valorousPresence = 0; 
 			
 			strength = Math.floor(user.stats.lvl / 2); if ( strength > 50 ) { strength = 50;} 
+			user.items.gear.equipped.forEach(function(gear) {
+		if (gear in content.gear.flat[user.items.gear.equipped[gear]].str) {
+				strength += (content.gear.flat[user.items.gear.equipped[gear]].str);
+				}
+		})
+			/*
 			strength += (content.gear.flat[user.items.gear.equipped.head].str);
 			strength += (content.gear.flat[user.items.gear.equipped.armor].str);
 			strength += (content.gear.flat[user.items.gear.equipped.shield].str);
@@ -838,6 +819,7 @@ function parseData() {
 			if (content.gear.flat[user.items.gear.equipped.armor].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.armor].str)};
 			if (content.gear.flat[user.items.gear.equipped.shield].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.shield].str)};
 			if (content.gear.flat[user.items.gear.equipped.weapon].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.weapon].str)};
+			*/
 			strength += user.stats.str; 
 			valorousPresence = Math.ceil((20 * strength / (200 + strength)));
 			
@@ -921,9 +903,9 @@ function parseData() {
 			
 
 	$('#userStats').html(htmlStats);
-	displaySelectedWardrobe();
+	addBorderToSelectedWardrobe();
 
-	function displaySelectedWardrobe() {
+	function addBorderToSelectedWardrobe() {
 	$("#percept").hide();
 	$("#constit").hide();
 	$("#strengt").hide();
@@ -932,28 +914,27 @@ function parseData() {
 	$("#legenda").hide();
 	$("#initial").hide();
 	
-	
+	$("#Intelligence").css({"border": "none", "border-color": "yellow"});
 	$("#Perception").css({"border": "none", "border-color": "yellow"});
 	$("#Constitution").css({"border": "none", "border-color": "yellow"});
-	$("#Intelligence").css({"border": "none", "border-color": "yellow"});
 	$("#Strength").css({"border": "none", "border-color": "yellow"});
 	$("#Blessing").css({"border": "none", "border-color": "yellow"});
 	$("#Legendary").css({"border": "none", "border-color": "yellow"});
+
 	
 	if (wardrobeEquipped == 'Initial') { // show if initial wardrobe is not one of Habitican Wardrobes, else hide Initial
-		$("#Initial").css({"border": "solid", "border-color": "#4f2a93"});
+		$('#Initial').css({"border": "solid", "border-color": "#4f2a93"});
 		} else
 		{$('#Initial').hide();}
-	if (wardrobeEquipped == 'Intelligence') {$('#intelli').show();$("#Intelligence").css({"border": "solid", "border-color": "#4f2a93"});}
-	if (wardrobeEquipped == 'Perception') {$('#percept').show(); $("#Perception").css({"border": "solid", "border-color": "#af8af3"});}
-	if (wardrobeEquipped == 'Constitution') {$('#constit').show();$("#Constitution").css({"border": "solid", "border-color": "#4f2a93"});}
-	if (wardrobeEquipped == 'Strength') {$('#strengt').show();$("#Strength").css({"border": "solid", "border-color": "#4f2a93"});}
-	if (wardrobeEquipped == 'Blessing') {$('#blessin').show();$("#Blessing").css({"border": "solid", "border-color": "#4f2a93"});}
-	if (wardrobeEquipped == 'Legendary') {$('#legenda').show();$("#Legendary").css({"border": "solid", "border-color": "#4f2a93"});}
-	
-	
-	
-	}; // end of function displaySelectedWardrobe
+	console.log(JSON.stringify(wardrobeEquipped));
+	if (wardrobeEquipped.includes('Intelligence')) {$('#intelli').show(); $("#Intelligence").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped.includes('Perception')) {$('#percept').show(); $("#Perception").css({"border": "solid", "border-color": "#af8af3"});}
+	if (wardrobeEquipped.includes('Constitution')) {$('#constit').show();$("#Constitution").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped.includes('Strength')) {$('#strengt').show();$("#Strength").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped.includes('Blessing')) {$('#blessin').show();$("#Blessing").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped.includes('Legendary')) {$('#legenda').show();$("#Legendary").css({"border": "solid", "border-color": "#4f2a93"});}
+
+	}; // end of function addBorderToSelectedWardrobe
 
 
 
@@ -965,11 +946,11 @@ function parseData() {
 	function equip(wardrobe) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
 		var currentItem = '';
 		var typeOfItem = '';
-		var currenType = '';
+		//var currenType = '';
 		var base = $.when({});
 		var j = 0;
 		var i = 0;
-
+		console.log(wardrobe + JSON.stringify(wardrobe));
 		$.each(wardrobe, function(key, itemToEquip){
 			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
 			typeOfItem = content.gear.flat[itemToEquip].type; //eg displays: head (good)
@@ -977,17 +958,16 @@ function parseData() {
 			currentItem = user.items.gear.equipped[typeOfItem]; //eg displays: helm_special_2
 			// verify if item is already equipped
 			if (itemToEquip == user.items.gear.equipped[typeOfItem]) {
-				//j++;
 				equipCountSkip++;
 				htmlEnd += content.gear.flat[itemToEquip].text + '<br>';
-				if (equipCountSkip===4){
+				if (equipCountSkip===Object.keys(wardrobe).length){ // if equipCountSkip = amount of inventory in wardrobe
 					equipCountSkip=0;
 					$("#modalContent").html('already equipped');
 					$('#modal').show();
 					setInterval(function(){
 					$("#modal").hide();
 					},1500)
-				} // end if j=4
+				} // end if equipCountSkip
 			} else {
 				htmlEnd += content.gear.flat[itemToEquip].text + '<br>';
 				base = base.then(fireAjax(itemToEquip, typeOfItem));	
@@ -1011,11 +991,11 @@ function parseData() {
 					},
 					success: function(){user.items.gear.equipped[typeOfItem] = itemToEquip;},
 					complete: function(){defer.resolve();},
-					error: function(){alert('Error<br>Please reload page')}
+					error: function(){alert('Error firing Ajax. No such key: ' + itemToEquip + ' in ' + typeOfItem);}
 				}); // end ajax
 				defer.promise().then(function(){ // this was hard to code // might be anywhere in the code
 						equipCount++;
-						if (equipCount + equipCountSkip === 4){
+						if (equipCount + equipCountSkip === Object.keys(wardrobe).length){
 							equipCount = 0;
 							equipCountSkip = 0;
 							$('#modal').hide();
@@ -1035,19 +1015,6 @@ function parseData() {
 	//// Buttons ///////////////////////
 	////////////////////////////////////
 
-    // Buttons are integrated into the felxboxes
-	/*var buttons =  '<input id="a" type="submit" value="Content">' +
-	 				'<input id="b" type="submit" value="User data">' +
-					//'<input id="c" type="submit" value="initial Wardrobe">' +
-					'<input id="TAS" type="submit" value="Tasks">' +
-					'<input id="INT" type="submit" value="Wardrobe INT">' +
-					'<input id="PER" type="submit" value="Wardrobe PER">';
-	if (legendaryGearOwned == true) {buttons +='<input id="LEG" type="submit" value="Legendary Gear">';}
-	buttons +=		'<input id="TOT" type="submit" value="Tools of the Trade">' +
-					'<input id="HLP" type="submit" value="Help">' +
-					'<input id="DGR" type="submit" value="Display Gear">' +
-					'<input id="RFR" type="submit" value="Refresh">';*/
-					
 	 $('#buttons').html(buttons);
 
 	 $('#a').click(function(){$('#displayContent').html('<div>This is Habitica\'s content: <br><pre>' + JSON.stringify(content.gear.flat, null, 4) + '</pre></div>');});
@@ -1058,42 +1025,42 @@ function parseData() {
 				equip(intelligence);
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				displaySelectedWardrobe('intelligence');
+				addBorderToSelectedWardrobe('intelligence');
 				});
 	 $('#PER').click(function(){
 	 			htmlEnd = '<div> Wardrobe PER <br>';
 				equip(perception);
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				displaySelectedWardrobe('perception');
+				addBorderToSelectedWardrobe('perception');
 				});
 	  $('#CON').click(function(){
 	 			htmlEnd = '<div> Wardrobe CON <br>';
 				equip(constitution);
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				displaySelectedWardrobe('constitution');
+				addBorderToSelectedWardrobe('constitution');
 				});
 	 $('#LEG').click(function(){
 	 			htmlEnd = '<div>Wardrobe Legendary Equipment <br>';
 				equip(legendary);
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				displaySelectedWardrobe('legendary');
+				addBorderToSelectedWardrobe('legendary');
 				});
 	 $('#BLE').click(function(){
 	 			htmlEnd = '<div>Wardrobe Blessing (CON + INT) <br>';
 				equip(blessing);
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				displaySelectedWardrobe('blessing');
+				addBorderToSelectedWardrobe('blessing');
 				});		
 	 $('#STR').click(function(){
 	 			htmlEnd = '<div>Wardrobe Strength <br>';
 				equip(strength);
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				displaySelectedWardrobe('strength');
+				addBorderToSelectedWardrobe('strength');
 				});	
 	 $('#TOT').click(function(){
 	 			$('#modalContent').html('casting: Tools of the Trade');
@@ -1112,7 +1079,7 @@ function parseData() {
 					}); //end of ajax
 				}); //end of click
 	$('#HLP').click(function(){
-				htmlEnd =   '<div>Version beta 1.0 (is a beta/test version of the tool) <br><br>' +
+				htmlEnd =   '<div>Version 1.3 (Feb. 2019) <br><br>' +
 							'For help see <a href="http://habitica.wikia.com/wiki/Habitican_Wardrobes">Habitican Wardrobes</a>' +
 							'<br>';
 				$('#displayContent').html(htmlEnd);
@@ -1128,7 +1095,7 @@ function parseData() {
 							'<div><pre>Best PER Gear: ' + JSON.stringify(perception, null, 4) + '</pre></div>' +
 							'<div><pre>Best STR Gear: ' + JSON.stringify(strength, null, 4) + '</pre></div>' +
 							'<div><pre>Best CON Gear: ' + JSON.stringify(constitution, null, 4) + '</pre></div>' +
-							'<div><pre>Best Belling Gear: ' + JSON.stringify(blessing, null, 4) + '</pre></div>' +
+							'<div><pre>Best Blessing Gear: ' + JSON.stringify(blessing, null, 4) + '</pre></div>' +
 							'<div><pre>Initial Gear: ' + JSON.stringify(user.items.gear.equipped, null, 4) + '</pre></div>' +
 							'<div><pre>Legendary Gear: ' + JSON.stringify(legendary, null, 4) + '</pre></div>';
 			$('#displayContent').html(displayGear);
@@ -1347,6 +1314,31 @@ div.scroll {
 }
 
 
+.skills {
+    width: 47%;
+    height: 80px;
+	float: left;
+	border-radius: 8px;
+	border-style: solid;
+	border-width: 3px;
+	border-color: #ffffff
+	
+}
+.mana {
+	width: 47%;
+    margin-left: 50%;
+    height: 80px;
+	align: left;
+	border-radius: 8px;
+	border-style: solid;
+	border-width: 3px;
+	border-color: #ffffff
+
+
+}
+
+
+
 
 /***************************
 *** IMG hovers *************
@@ -1358,7 +1350,7 @@ div.scroll {
 .description {
   border-radius: 8px;
   position: absolute;
-  bottom: 65px;
+  bottom: 5px;
   left: 1px;
   font-weight: bold;
   color: #333333;
@@ -1366,7 +1358,7 @@ div.scroll {
   opacity: 0;
   background-color: #fefefe;
   margin: auto;
-  padding: 20px;
+  padding: 5px;
   border: 1px solid #888888;
   width: 130px;
   z-index: 2;
@@ -1503,7 +1495,7 @@ h1 span {
 <div id="innerBody">
 
 <h1>Habitican Wardrobes
-	<span>(v beta 1.0)</span></h1>
+	<span>(v 1.3 Feb. 2019)</span></h1>
 <div id="headerExtras"></div>
 <hr class="clear" />
 <div id="loading">
@@ -1536,17 +1528,17 @@ h1 span {
             (from <a href="https://habitica.com/user/settings/api" target="_blank"> User Icon &gt; Settings &gt; API</a>)
             </legend>
             <label for="userId"><span>User ID</span>
-                <input type="text" name="userId" id="userId"> <!-- Value entfernen -->
+                <input type="text" name="userId" id="userId"  > <!-- Value entfernen -->
             </label>
             <label for="apiToken"><span>API Token</span>
-                <input type="password" name="apiToken" id="apiToken" > <!-- Value entfernen -->
+                <input type="password" name="apiToken" id="apiToken" "> <!-- Value entfernen -->
             </label>
 
             <input type="submit" value="Fetch My Data" />
 			<p class="highlight">Datenschutzerklärung:</p>
 			<ul>
-			Die Nutzung dieser Webseite erfolgt unter Angabe Ihrer User-ID und Ihres API-Tokens. Diese haben Sie von www.habitica.com als Zugangsdaten zum Online-Spiel Habitica erhalten. <br> 
-			Diese Webseite speichert Ihre Eingaben nicht. Ihre Eingaben dienen nur dem Zweck, auf den von Ihnen eingerichteten Account bei Habitica zuzugreifen. <br>
+			Die Nutzung dieser Webseite erfolgt unter Angabe Ihrer User-ID und Ihres API-Tokens der website habitica.com. <br> 
+			abbhh.de/wardrobes.html speichert Ihre Eingaben nicht. Ihre Eingaben dienen nur dem Zweck, auf den von Ihnen eingerichteten Account bei Habitica zuzugreifen. <br>
 			Der Hoster dieser Webseite speichert Server-Logs anonymisiert für 3 Monate zu statistischen Zwecken. Nach Ablauf der drei Monate werden die Daten gelöscht. 
 			In den ServerLogs werden Ihre IP-Adresse, Ihr verwendeter Browser, die Refferer-URL gespeichert. <br>  
 			Für allgemeine Risiken des Internetverkehrs wird keine Haftung übernommen. Angreifern kann es möglich sein, Ihre Eingaben abzufangen und so Rückschlüsse auf den bei Habitica 
@@ -1579,10 +1571,32 @@ h1 span {
   <br>
    Habitican Wardrobes offers six wardrobes out of which a Habitican can choose to reach their goals faster. <br>
    <br>
-   Known issues:
+   Version 1.3<br>
+   Class-specific Impacts of skills were added for all classes.<br>
+   Bug-fixes: <br>
+   Empty inventory sports are no longer shown. <br>
+   In case multiple wardrobes contain the same inventory, all those wardrobes are displayed with a boarder. <br>
+   Corrected focus for Tooltips for information about gear <br> 
+   undefined situations in gear fixed<br>
+   euip-function was adjusted to match exact number of items in each wardrobe<br>
    <br>
-   Two-handed weapons are not yet implemented.  <br>
-   Accessory is not taken in consideration. <br>
+   Version 1.2<br>
+   Two-handed weapons were implemented.  <br>
+   code was overhauled. <br>
+   <br>
+   Whats to come...:<br>
+   <br>
+   tooltips are out of focus on the equipment items.<br>
+   graphical information for each slot in each wardrobe, so each slot has its unique location everytime<br>
+   Accessory is too strict in wardrobes blessing and constitution . <br>
+   Border to indicate which wardrobe is equipped, may show on differen wardrobe if gear in the non-chosen wardrobe is equal to the chosen one. <br>
+   Heavy-Metal button<br>
+   Info on how many attribute points can be added/subtracted without influence on the skills effect. <br>
+   
+   <br>
+   old Version 1.1<br>
+  Fixed bug:  Items that were lost due to death were suggested in the wardrobe, and couldn't be equipped. 
+   
    </div></fieldset>
   
 
