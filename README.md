@@ -9,4 +9,6 @@ Your Habitica User-ID and API-Token have to be entered in order to get access to
 The script analyses your battle gear and offers six different wardrobes, each with the best suitable gear. 
 Wardrobes are: Intelligence, Perception, Strength, Constitution, Blessing and Legendary. 
 
+On a further frontend you can cast skills. The code automatically equips the most suitable wardrobe for this.
+
 
