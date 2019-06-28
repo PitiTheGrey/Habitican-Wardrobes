@@ -6,7 +6,9 @@
     <meta name="description" content="Wardrobes for Heros of Habitica" />
     <meta name="author" content="@Piti! Code is based on Alys (Alice Harris) lady_alys@oldgods.net code from Data Display Tool" />
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script> 
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	
+	
 	
 <script type="text/javascript">
 
@@ -15,6 +17,8 @@ $(function() { // wraps around all our code to not pollute global namespace
 //////////////////////////////////////////////////////////////////////
 ////   Global Variables                              /////////////////
 //////////////////////////////////////////////////////////////////////
+
+
 
 var content = {}; // Habitica's content
 var user = {}; // holds user content
@@ -29,11 +33,16 @@ var perception = {};
 var constitution = {};
 var strength = {};
 var initialGear = {};
+var amountOfSkill = 0; 
+var rememberGear = "true"; // use string (required by localStorage)
+var hardMode = "false"; // use string (required by localStorage) 
+var frontEnd = "skills"; // for toggling between "wardrobes" and "skills" / later get content from localstorage
 var legendaryGearOwned = false; // see function checkLegendaryGear
- var wardrobeEquipped = ['Initial'];
+var wardrobeEquipped = ['Initial'];
 var userName = '';
 var equipCount = 0;
 var equipCountSkip = 0;
+var nameOfWardrobe = 'perception'; 
 var gearLocation = ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]; 
 var attributes = ["int", "per", "str", "con"];
 var maxInt = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
@@ -41,8 +50,139 @@ var maxPer = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory"
 var maxStr = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
 var maxCon = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
 var maxBles = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
-
-
+var skills = {"rogue": {
+				"field1": {
+					"name": "Tools of the Trade", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/toolsOfTrade",
+                    "cost": 25, 
+					"nameOfWardrobe": "Perception",
+					"unlock": 13,  
+					"wardrobe": "perception"   // will be replaced by wardrobe-object
+					},
+				"field2": {
+					"name": "Stealth", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/stealth",
+                    "cost": 45, 
+					"nameOfWardrobe": "Perception",
+					"unlock": 14,
+					"wardrobe": "perception" },
+				"field3": {
+					"name": "Pickpocket", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/pickPocket",
+                    "cost": 10, 
+					"nameOfWardrobe": "Perception",
+					"wardrobe": "perception",
+					"unlock": 11, 
+					"task": "pending",  // will be replaced by evaluateTaksks();
+					"taskId": "pending"},
+				"field4": {
+					"name": "Backstab", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/backStab",
+                    "cost": 15, 
+					"nameOfWardrobe": "Strength",
+					"wardrobe": "strength",
+					"unlock": 12, 
+					"task": "pending",
+					"taskId": "pending" }	
+				},
+			  "wizard": {
+				"field1": {
+					"name": "Earthquake", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/earth",
+                    "cost": 35, 
+					"nameOfWardrobe": "Intelligence",
+					"unlock": 13, 
+					"wardrobe": "intelligence" },
+				"field2": {
+					"name": "Burst of Flames", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/fireball",
+                    "cost": 10, 
+					"nameOfWardrobe": "Intelligence",
+					"wardrobe": "intelligence",
+					"unlock": 11, 
+					"task": "pending",
+					"taskId": "pending" 
+					},
+				"field3": {
+					"name": "Ethereal Surge", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/mpheal",
+                    "cost": 30, 
+					"nameOfWardrobe": "Intelligence",
+					"unlock": 12, 
+					"wardrobe": "intelligence"
+					},
+				"field4": {
+					"name": "Chilling Frost", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/frost",
+                    "cost": 40, 
+					"nameOfWardrobe": "Intelligence",
+					"unlock": 14, 
+					"wardrobe": "intelligence" }	
+				}, 
+			  "warrior": {
+				"field1": {
+					"name": "Valorous Presence", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/valorousPresence",
+                    "cost": 20, 
+					"nameOfWardrobe": "Strength",
+					"unlock": 13, 
+					"wardrobe": "strength" },
+				"field2": {
+					"name": "Brutal Smash", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/smash",
+                    "cost": 10, 
+					"nameOfWardrobe": "Strength",
+					"wardrobe": "strength",
+					"unlock": 11, 
+					"task": "pending",
+					"taskId": "pending" },
+				"field3": {
+					"name": "Intimidating Gaze", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/intimidate",
+                    "cost": 15, 
+					"nameOfWardrobe": "Constitution",
+					"unlock": 14, 
+					"wardrobe": "constitution" },
+				"field4": {
+					"name": "Defensive Stance", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/defensiveStance",
+                    "cost": 25, 
+					"nameOfWardrobe": "Constitution",
+					"unlock": 12, 
+					"wardrobe": "constitution" }	
+				},
+			  "healer": {
+				"field1": {
+					"name": "Protective Aura", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/protectAura",
+                    "cost": 15, 
+					"nameOfWardrobe": "Blessing",
+					"unlock": 13, 
+					"wardrobe": "blessing" },
+				"field2": {
+					"name": "Searing Brightness", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/brightness",
+                    "cost": 15, 
+					"nameOfWardrobe": "Constitution",
+					"unlock": 12, 
+					"wardrobe": "constitution" },
+				"field3": {
+					"name": "Blessing", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/healAll",
+                    "cost": 25, 
+					"nameOfWardrobe": "Blessing",
+					"unlock": 14, 
+					"wardrobe": "blessing" },
+				"field4": {
+					"name": "Healing Light", 
+                    "API": "https://habitica.com/api/v4/user/class/cast/heal",
+                    "cost": 15, 
+					"nameOfWardrobe": "Blessing",
+					"unlock": 11, 
+					"wardrobe": "blessing" }	
+				}
+			};		//end skill...
+			
 
 //////////////////////////////////////////////////////////////////////
 ////   Get UUID from URL      ////////////////////////////////////////
@@ -77,14 +217,121 @@ $('#userApiDetailsForm').submit(function(event){
 
 
 
+
+//////////////////////////////////////////////////////////////////////
+//// LocalStorage with Fallback to cookies ///////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+
+var storeData = function storeData(key, value) {
+
+    var lsSupport = false;
+    // Check for native support
+		lsSupport = (function() {
+			try {
+				localStorage.setItem("Test", "Test");
+				localStorage.removeItem("Test");
+				return true;
+			} catch (exception) {
+				return false;
+			}
+		}());
+
+
+    
+    // If value is detected, set new or modify store
+    if (typeof value !== "undefined" && value !== null) {
+        // Convert object values to JSON
+        if ( typeof value === 'object' ) {
+            value = JSON.stringify(value);
+        }
+        if (lsSupport) { 
+            localStorage.setItem(key, "" + value);
+        } else { // Use Cookie
+            createCookie(key, value, 30);
+        }
+    }
+
+    // No value supplied, return value
+    if (typeof value === "undefined") {
+        // Get value
+        var data = null; 
+		if (lsSupport) { // Native support
+            data = localStorage.getItem(key);
+        } else { // Use cookie 
+            data = readCookie(key);
+        }
+
+        
+
+        // Try to parse JSON...
+        try {
+           data = JSON.parse(data);
+        }
+        catch(e) {
+           data = data;
+        }
+		if (data != null){
+			data = "" + data; 
+		}
+        return data;
+    }
+
+    // Null specified, remove store
+
+    if (value === null) {
+        if (lsSupport) { // Native support
+            localStorage.removeItem(key);
+        } else { // Use cookie
+            createCookie(key, '', -1);
+        }
+    }
+   
+
+    /**
+     * Creates new cookie or removes cookie with negative expiration
+     * @param  key       The key or identifier for the store
+     * @param  value     Contents of the store
+     * @param  exp       Expiration - creation defaults to 30 days
+     */
+
+    function createCookie(key, value, exp) {
+        var date = new Date();
+        date.setTime(date.getTime() + (exp * 24 * 60 * 60 * 1000));
+        var expires = "; expires=" + date.toGMTString();
+        document.cookie = key + "=" + value + expires + "; path=/";
+    }
+    /**
+     * Returns contents of cookie
+     * @param  key       The key or identifier for the store
+     */
+
+    function readCookie(key) {
+        var nameEQ = key + "=";
+        var ca = document.cookie.split(';');
+        for (var i = 0, max = ca.length; i < max; i++) {
+            var c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+};
+
+
+
+
+
+
+
+
 //////////////////////////////////////////////////////////////////////
 ////   Data Fetch Function   /////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
 function fetchData() {
-    //$('#loading .good').show();
     $('#loading .bad' ).hide();
-	$('#modalContent').html('Please wait, fetching data from Habitica...');
+	$('#modalContent').html('Please wait, fetching data from Habitica... 1/3');
 	$('#modal').show();
 
     var ajaxRunningCount = 3; // drops to 0 when all calls have succeeded
@@ -105,6 +352,7 @@ function fetchData() {
         dataType: 'json',
         cache: true,
 		 beforeSend: function(xhr){
+		 		xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
                 xhr.setRequestHeader('x-api-user', userID);
                 xhr.setRequestHeader('x-api-key',  apiToken);
             },
@@ -119,6 +367,7 @@ function fetchData() {
         dataType: 'json',
         cache: false,
         beforeSend: function(xhr){
+				xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
                 xhr.setRequestHeader('x-api-user', userID);
                 xhr.setRequestHeader('x-api-key',  apiToken);
             },
@@ -134,7 +383,9 @@ function fetchData() {
     function fetchContentSuccess(data) {
         content = data.data;
         ajaxRunningCount--;
-        if (ajaxRunningCount === 0) { // all ajax calls have finished
+		if (ajaxRunningCount === 1) {$('#modalContent').html('Please wait, fetching data from Habitica... 3/3');}
+		if (ajaxRunningCount === 2) {$('#modalContent').html('Please wait, fetching data from Habitica... 2/3');}
+        if (ajaxRunningCount === 0) {  // all ajax calls have finished
             $('#modal').hide();
 			parseData();
         }
@@ -143,7 +394,9 @@ function fetchData() {
     function fetchUserSuccess(data) {
         user = data.data;
         ajaxRunningCount--;
-        if (ajaxRunningCount === 0) { // all ajax calls have finished
+        if (ajaxRunningCount === 1) {$('#modalContent').html('Please wait, fetching data from Habitica... 3/3');}
+		if (ajaxRunningCount === 2) {$('#modalContent').html('Please wait, fetching data from Habitica... 2/3');}
+		if (ajaxRunningCount === 0) { // all ajax calls have finished
             $('#modal').hide();
 			parseData();
         }
@@ -152,13 +405,13 @@ function fetchData() {
 	function fetchTasksSuccess(data) {
         tasksFromDb = data.data;
         ajaxRunningCount--;
+        if (ajaxRunningCount === 1) {$('#modalContent').html('Please wait, fetching data from Habitica... 3/3');}
+		if (ajaxRunningCount === 2) {$('#modalContent').html('Please wait, fetching data from Habitica... 2/3');}
         if (ajaxRunningCount === 0) { // all ajax calls have finished
             $('#modal').hide();
 			parseData();
         }
     }
-
-
 
 } // end of fetchData() //////////////////////////////////////////////
 
@@ -178,15 +431,64 @@ function parseData() {
 	var str = 0;
 	var con = 0;
 	var dailyTotal = 0;
+	var dailyTotalStealth = 0; 
 	var dailyCompleted = 0;
-	wardrobeEquipped = ["Initial"];
+	//var wardrobeEquipped = ["Initial"];
 	var mostValueableTaskValue = 0;
 	var mostValueableTaskName = "";  
+	
 
-	$('#headerExtras').html('<div id="userNameDisplay">' + user.profile.name + '(' + user.stats.class + ')</div>');	// display UserName and Class
-	evaluateTasks();
+function getFirstLocalStorage() {	
+	//front End (wardrobes and skills)
+	var frontEnd = storeData("FrontEnd"); 
+		if (frontEnd == null) {
+		 	frontEnd = "wardrobes"; 
+			storeData("FrontEnd", "wardrobes"); // set FrontEnd to "wardrobes" on first time opening code in browser
+			$('.skills-Container').hide(); 
+			}
+		if (frontEnd == "wardrobes") {
+			$('.skills-Container').hide();
+			}
+		if (frontEnd == "skills") {
+			$('.wardrobes-Container').hide();
+			}
+			
+	rememberGear = storeData("Remember Gear"); 
+			if (rememberGear == "true") {$("#rememberGear").prop('checked', true);}
+			if (rememberGear == null) {
+				rememberGear = "true"; 
+				storeData("Remember Gear", "true"); 
+				$('#rememberGear').prop('checked', true);  
+			}
+	
+	
+	} // end of funciton getFirstLocalStorage
+	
+	
 	function evaluateTasks() {
-		var compareValue = 0;
+		// get bluest Task for (Burst of Flames(Mage))   // challenge {}: Skill can only be cast on non-challenge tasks, but on habits, dailies and todos
+		var bluestTaskId = ""; 
+		var bluestTaskValue = 0;
+		var bluestTaskName = "";  
+		for (var i in tasksFromDb){ 
+			if (jQuery.isEmptyObject(tasksFromDb[i].challenge)) {
+				if (bluestTaskValue < tasksFromDb[i].value) {
+					bluestTaskValue = tasksFromDb[i].value; 
+					bluestTaskId = tasksFromDb[i].id
+					bluestTaskName = tasksFromDb[i].text; 		
+				}
+				} 
+			} // end for var i in tasksFromDb
+		skills.wizard.field2.task = bluestTaskName; 
+		skills.wizard.field2.taskId = bluestTaskId; 
+		skills.rogue.field3.task = bluestTaskName; 
+		skills.rogue.field3.taskId = bluestTaskId; 
+		skills.rogue.field4.task = bluestTaskName; 
+		skills.rogue.field4.taskId = bluestTaskId; 
+		skills.warrior.field2.task = bluestTaskName; 
+		skills.warrior.field2.taskId = bluestTaskId; 
+		
+		
 		for (var i in tasksFromDb) { 
 			if (tasksFromDb[i].type == 'habit') {
 				if (mostValueableTaskValue < tasksFromDb[i].value) {
@@ -194,25 +496,41 @@ function parseData() {
 					mostValueableTaskName = tasksFromDb[i].text; 
 				}
        			} // endIf daily or habit
-			if (tasksFromDb[i].type == 'daily' && tasksFromDb[i].isDue == true) {
-				dailyTotal ++;
+			if (tasksFromDb[i].type == 'daily') {
+				dailyTotalStealth++; 
+				if (tasksFromDb[i].isDue == true) {
+					dailyTotal ++;
+					}
 				if (tasksFromDb[i].completed == true) {
 					dailyCompleted ++;
-				}
-			}
+					}	
+				} // end if daily
 		}; // end for
 	}; // end of function evaluateTasks;
 
-	checkLegendaryGear();
+
 	function checkLegendaryGear() {
 		var ownedGear = user.items.gear.owned;
-		if (ownedGear["head_special_2"] == true && ownedGear["armor_special_2"] == true && ownedGear["weapon_special_2"] == true && ownedGear["shield_special_goldenknight"] == true) {
-			legendaryGearOwned = true;}
+		if (ownedGear["head_special_2"] == true && 
+			ownedGear["armor_special_2"] == true && 
+			ownedGear["weapon_special_2"] == true && 
+			ownedGear["shield_special_goldenknight"] == true) {
+			legendaryGearOwned = true;
+		} else {
+			legendaryGearOwned = false; 
+		}
 	}; // end of function checkLegendaryGear
 
-
-	getMaxGear(); // Searches for the best possible type of gear in means of INT and PER, that is being posessed by the user
+	
 	function getMaxGear() {
+		// hard mode button
+		hardMode = storeData("Hard Mode"); 
+			if (hardMode == "true") {$("#hardMode").prop('checked', true);}
+			if (hardMode == null) {
+				hardMode = "false"; 
+				storeData("Hard Mode", "false"); 
+				$('#hardMode').prop('checked', false);  
+			}
 		var ownedKeys = {}; 
 		var ownedGear = user.items.gear.owned; // Format: "nameOfEquipment": boolean,   // user.items.gear.owned = false might occur when item was owned once but lost due to death. Still to be implemted	 
 	
@@ -220,6 +538,17 @@ function parseData() {
 		for (var item in ownedGear){
 			if (ownedGear[item] === false) {delete ownedGear[item];} 
 			}
+		
+		// get initial Gear and save to var
+		initialGear.weapon = user.items.gear.equipped.weapon;  
+		initialGear.shield = user.items.gear.equipped.shield;  
+		initialGear.armor = user.items.gear.equipped.armor;  
+		initialGear.head = user.items.gear.equipped.head;  
+		initialGear.headAccessory = user.items.gear.equipped.headAccessory;  
+		initialGear.back = user.items.gear.equipped.back;  
+		initialGear.body = user.items.gear.equipped.body;  
+		initialGear.eyewear = user.items.gear.equipped.eyewear;  
+		
 		
 		for (var item in ownedGear){ // var item: Format: nameOfEquipment
 			ownedKeys[item] = content.gear.flat[item]; // Habiticas content information about each key
@@ -234,10 +563,13 @@ function parseData() {
 						maxInt[gear] = (factor * ownedKeys[item].int);
 					} // end if  
 				} // end for var i in gearLocation
-				if (maxInt["headAccessory"] <= 2 && ownedGear["headAccessory_armoire_comicalArrow"] == true) {intelligence["headAccessory"] = "headAccessory_armoire_comicalArrow"; }
-				if (maxInt["back"] <= 2 && ownedGear["back_special_aetherCloak"] == true) {intelligence["back"] = "back_special_aetherCloak";}
-				if (maxInt["body"] <= 2 && ownedGear["body_special_aetherAmulet"] == true) {intelligence["body"] = "body_special_aetherAmulet";}
-
+				// Hardmode?
+				if (document.getElementById("hardMode").checked === false) {
+					if (maxInt["headAccessory"] <= 2 && ownedGear["headAccessory_armoire_comicalArrow"] == true) {intelligence["headAccessory"] = "headAccessory_armoire_comicalArrow"; }
+					if (maxInt["back"] <= 2 && ownedGear["back_special_aetherCloak"] == true) {intelligence["back"] = "back_special_aetherCloak";}
+					if (maxInt["body"] <= 2 && ownedGear["body_special_aetherAmulet"] == true) {intelligence["body"] = "body_special_aetherAmulet";}
+				} // end if hardMode
+				
 				// PER
 				var factor = 1; 
 				if (ownedKeys[item].klass == user.stats.class) {var factor =1.5;}
@@ -270,9 +602,12 @@ function parseData() {
 						maxStr[gear] = (factor * ownedKeys[item].str);
 					}  // end if
 				} // end for var i in gearLocation
-				if (maxStr["back"] <= 2 && ownedGear["back_special_aetherCloak"] == true) {strength.back = "back_special_aetherCloak";}
-				if (maxStr["eyewear"] <= 2 && ownedGear["eyewear_special_aetherMask"] == true) {strength.eyewear = "eyewear_special_aetherMask";}
-
+				//Hardmode?
+				if (document.getElementById("hardMode").checked === false) {
+					if (maxStr["back"] <= 2 && ownedGear["back_special_aetherCloak"] == true) {strength.back = "back_special_aetherCloak";}
+					if (maxStr["eyewear"] <= 2 && ownedGear["eyewear_special_aetherMask"] == true) {strength.eyewear = "eyewear_special_aetherMask";}
+				} // end if hardMode
+				
 				// Blessing for Healers INT+CON
 				var factor = 1; 
 				if (ownedKeys[item].klass == user.stats.class) {var factor = 1.5;} 
@@ -329,10 +664,7 @@ function parseData() {
 			} // end if 
 			
 			
-			
-			
-			
-			//PER          //will it be necessary to calculate PER, STR, etc. also?
+		//PER          //will it be necessary to calculate PER, STR, etc. also?
 		if ('weapon' in perception) { 
 			weaponPerPoints = ownedKeys[perception["weapon"]].per;
 			if (ownedKeys[perception.weapon].klass == user.stats.class) {weaponPerPoints += 0.5 * weaponPerPoints; } 
@@ -361,21 +693,43 @@ function parseData() {
 						perception.weapon = item; 
 						delete perception.shield;  // twoHanded weapon doesn't allow for a shield
 			} // end if
-			
-			
-		}	
+		}	// end for var item in ownedGear
 		} // end second run: for var item in ownedGear 
- 
+
+		addWardrobesToSkills();
+		getEquippedWardrobes();
+
+} // end of getMaxGear
+ 	
+function addWardrobesToSkills() {
+	var field = ["field1", "field2", "field3", "field4"];
+	field.forEach(function(item, value){
+		var s = skills[user.stats.class][item].nameOfWardrobe;
+			if (s == 'Intelligence') {skills[user.stats.class][item].wardrobe = intelligence} 
+			if (s == 'Perception') {skills[user.stats.class][item].wardrobe = perception} 
+			if (s == 'Strength') {skills[user.stats.class][item].wardrobe = strength} 
+			if (s == 'Blessing') {skills[user.stats.class][item].wardrobe = blessing} 
+			if (s == 'Constitution') {skills[user.stats.class][item].wardrobe = constitution} 
+	}); // end field.forEach
+}	// end function addWardrobesToSkills
+	
+function getEquippedWardrobes() {	
+		// wardrobeEquipped = []; // not the solution to reject double enties! It causes Initial to fail
  		// get array with all wardrobes currently equipped 
-        if (compareGear(intelligence) == true) {wardrobeEquipped.push('Intelligence');};
-        if (compareGear(perception) == true) {wardrobeEquipped.push('Perception');};
-        if (compareGear(strength) == true) {wardrobeEquipped.push('Strength');};
-        if (compareGear(blessing) == true) {wardrobeEquipped.push('Blessing');};
-        if (compareGear(constitution) == true) {wardrobeEquipped.push('Constitution');};
-        if (compareGear(legendary) == true) {wardrobeEquipped.push('Legendary');};
-        if (wardrobeEquipped.length > 1) {wardrobeEquipped = wardrobeEquipped.filter(function(item){return item !== 'Initial'}); console.log("Initial killed");}; // get rid of 'Initial' in case any other wardrobe matches
-        } // end of getMaxGear
- 
+		if (wardrobeEquipped.includes('Initial')) {wardrobeEquipped = ['Initial'];
+				} else {
+				wardrobeEquipped = [];
+				}	
+		
+        if (compareGear(intelligence) == true && !wardrobeEquipped.includes('intelligence')) {wardrobeEquipped.push('intelligence');};
+        if (compareGear(perception) == true && !wardrobeEquipped.includes('perception')) {wardrobeEquipped.push('perception');};
+        if (compareGear(strength) == true && !wardrobeEquipped.includes('strength')) {wardrobeEquipped.push('strength');};
+        if (compareGear(blessing) == true && !wardrobeEquipped.includes('blessing')) {wardrobeEquipped.push('blessing');};
+        if (compareGear(constitution) == true && !wardrobeEquipped.includes('constitution')) {wardrobeEquipped.push('constitution');};
+        if (compareGear(legendary) == true && !wardrobeEquipped.includes('legendary')) {wardrobeEquipped.push('legendary');};
+        if (wardrobeEquipped.length > 1) {wardrobeEquipped = wardrobeEquipped.filter(function(item){return item !== 'Initial'}); }; // get rid of 'Initial' in case any other wardrobe matches
+ 		addBorderToSelectedWardrobe();	
+		
         function compareGear(specificWardrobe){ //checks if the currently equipped gear is equal to one of the wardrobes
                var equipped = true
                for (var gear in specificWardrobe){
@@ -385,7 +739,7 @@ function parseData() {
                } // end for gear in specificWardrobe
                return equipped; 
         }; // end of function compareGear
-  	
+} // end of getEquippedWardrobes 
 		
 	function calculateAttributes(wardrobe) {
 		var equipment = {"int" : 0, "per" : 0, "str" : 0, "con" : 0};
@@ -397,8 +751,7 @@ function parseData() {
 		var perfectDay = 0;
 		var manaRefresh = 0;
 		var impactSkill = 0;
-		var toolsOfTheTrade = 0; //rogue
-		var stealth = 0; 
+		var stealth = 0; // rogue
 		var backstab = 0; 
 		var pickpocket = 0; 
 		var blessing = 0;
@@ -429,18 +782,11 @@ function parseData() {
 		perfectDay = Math.round(user.stats.lvl / 2);
 		if (perfectDay >= 50) {perfectDay = 50;}
  		if (level > 50) {level = 50;}
-		totalUnbuffed.int = level + equipment.int + bonus.int + user.stats.int; // totalUnbuffed: level + equipment + allocation
-		totalUnbuffed.per = level + equipment.per + bonus.per + user.stats.per; // perfect day buff does not apply to Tools of the Trade
-		totalUnbuffed.con = level + equipment.con + bonus.con + user.stats.con; // but it does apply to manamax
-		totalUnbuffed.str = level + equipment.str + bonus.str + user.stats.str;
-		total.int = totalUnbuffed.int + user.stats.buffs.int; // total: everything - we need that to display attribute stats / we don't need it for calculation of manaRefresh and manaMax...
-		total.per = totalUnbuffed.per + user.stats.buffs.per;
-		total.con = totalUnbuffed.con + user.stats.buffs.con;
-		total.str = totalUnbuffed.str + user.stats.buffs.str;
-		totalPerfectDay.int = totalUnbuffed.int + perfectDay; // totalPerfectDay.xxx contains level, equipment, classbonus, allocated and PerfectDayBuff (after Cron)
-		totalPerfectDay.per = totalUnbuffed.per + perfectDay;
-		totalPerfectDay.con = totalUnbuffed.con + perfectDay;
-		totalPerfectDay.str = totalUnbuffed.str + perfectDay;
+		attributes.forEach(function(attr) { //attributes = ["int", "per", "con", "str"]; 
+			totalUnbuffed[attr] = level + equipment[attr] + bonus[attr] + user.stats[attr];
+			total[attr] = totalUnbuffed[attr] + user.stats.buffs[attr];
+			totalPerfectDay[attr] = totalUnbuffed[attr] + perfectDay;		
+		});
 		manaRefreshPerfectDay 	  = (2 * totalPerfectDay.int + 30) / 10; // manaRefreshPerfectDay is based on 100% completion rate before cron including only Perfect Day buff
 		manaRefreshCompletionRate = ((2 * totalUnbuffed.int + 30) / 10) * dailyCompleted / dailyTotal; // manaRefreshCompletionRate includes no buffs and is multipied with completion rate
 		var currentMana = user.stats.mp;
@@ -467,10 +813,10 @@ function parseData() {
 		}
 
 		//rogue
-		toolsOfTheTrade = Math.round((100 * (level + equipment.per + user.stats.per + bonus.per)) / (level + equipment.per + user.stats.per + bonus.per + 50));
-		stealth = Math.ceil(0.64 * dailyTotal * total.per / (total.per + 55));
+		function toolsOfTheTrade(unbuffedPer) {return Math.ceil(100 * unbuffedPer / (unbuffedPer + 50));}
+		stealth = Math.ceil(0.64 * dailyTotalStealth * total.per / (total.per + 55));
 		backstab = (mostValueableTaskValue + 1) +( 0.5 * total.str); 
-		pickpocket = (mostValueableTaskValue + 1) + (0.5 * total.per);  
+		pickpocket =(100*(mostValueableTaskValue + 1 + (0.5 * total.per))) / 100;  
 		//healer
 		blessing = Math.round((total.int + total.con + 5) * 0.04);
 		protectiveAura = Math.round((200 * totalUnbuffed.con) / (200 + totalUnbuffed.con));
@@ -547,31 +893,44 @@ function parseData() {
 					// ROGUE
 					if (user.stats.class == 'rogue') {
 						var x = totalUnbuffed.per;
-						var y = toolsOfTheTrade; 
+						var y = toolsOfTheTrade(x); // y = toolsOfTheTrade variable
+						var z = y;  // z = toolsOfTheTrade fix
 						var high = 0; 
 						var low = 0;
 						// Schleife nach unten  
-						while (y == toolsOfTheTrade) {
+						while (y == z) {
 							x--;
-							y  = Math.round((100 * x) / (50 + x));
+							y  = toolsOfTheTrade(x);
 							}
 							low = x + 1; 
 						// Schleife nach oben  
-						var x = totalUnbuffed.per;
-						var y = toolsOfTheTrade; 
-						while (y == toolsOfTheTrade) {
+						x = totalUnbuffed.per;
+						y = toolsOfTheTrade(x);
+						z = y;  
+						while (y == z) {
 							x++;
-							y  = Math.round((100 * x) / (50 + x));
+							y  = toolsOfTheTrade(x);
 							}
 							high = x - 1; 
-						htmlStats += '<font size="-2">Tools of the Trade: +' + toolsOfTheTrade +'PER<br>';	
-						htmlStats += 'PER<sub>unb</sub>=' + totalUnbuffed.per + '&#8712;{' + low + ',..,' + high + '}<br>';
+							
+						// start display Skills-section
+						htmlStats += '<a class="wrap">'; 
+						htmlStats += '<font size="-2">Tools of the Trade: +' + z +'PER<br>';	
+						//htmlStats += 'PER<sub>unb</sub>=' + totalUnbuffed.per + '&#8712;{' + low + ',..,' + high + '}<br>';
 						htmlStats += 'Stealth: ' + stealth + ' dailies<br>';  
-						var xp = Math.round(75*backstab / (backstab + 50)); 
-						var gold = Math.round(18 * backstab / (backstab + 75));
-						htmlStats += 'Backstab: ' + xp + 'XP + ' + gold + 'GP<br>' ;
-						var gold = Math.round(25 * pickpocket / (pickpocket + 75));
-						htmlStats +='Pickpocket: ' + gold + 'GP</font>';
+						var xp = Math.round(10 * 75*backstab / (backstab + 50)) / 10; 
+						var goldBackstab = Math.round(100*18 * backstab / (backstab + 75)) / 100;
+						htmlStats += 'Backstab: ' + xp + 'XP+' + goldBackstab + 'GP<br>' ;
+						var goldPickpocket = Math.round(100 * 25 * pickpocket / (pickpocket + 75)) / 100;
+						htmlStats +='Pickpocket: ' + goldPickpocket + 'GP</font>';
+						// Tooltips
+						htmlStats += '<p class="descriptionSkills">Tools of the Trade: +' + z + ' PER.<br><font size ="-2">Based on unbuffed Per: (' + totalUnbuffed.per + ')<br>';
+						htmlStats += 'Unbuffed Per in range of ' + low + ' ... ' + high + ' will have same effect.</font><br><br>'; 
+						htmlStats += 'Stealth: <font size="-2"> you will avoid </font>' + stealth + '<font size ="-2"> dailies<br>based on Per: (' + total.per + ')</font><br><br>';
+						htmlStats += 'Backstab: +' + xp + ' XP +' + goldBackstab + ' GP<br><font size ="-2">Base on STR: (' + total.str + ')<br>';
+						htmlStats += 'and your task: ' + mostValueableTaskName + ' with a value of ' + (Math.round(mostValueableTaskValue)) + '</font><br><br>';
+						htmlStats += 'Pickpocket: ' + goldPickpocket + '<font size = "-2"><br>Based on Per: (' + total.per + ') and your task: ' + mostValueableTaskName + ' with a value of ' + (Math.round(mostValueableTaskValue)) + '</font>';
+						htmlStats += '</p></a>';
 						} // end if ROGUE & continue Flexbox 2, 4, 6
 					//MAGE
 					if (user.stats.class == 'wizard') {
@@ -593,17 +952,26 @@ function parseData() {
 							y  = Math.round((30 * x) / (200 + x));
 							}
 							high = x - 1; 
+						htmlStats += '<a class="wrap">'; 	
 						htmlStats += '<font size="-2">Earthquake: +' + earthquake + 'INT<br>';	
-						htmlStats += 'INT<sub>unb</sub> = ' + totalUnbuffed.int  + '&#8712;{' + low + ',..,' + high + '}<br>';
-						htmlStats += 'Eth.Surge : +' + etherealSurge + 'mana<br>';  
+						//htmlStats += 'INT<sub>unb</sub> = ' + totalUnbuffed.int  + '&#8712;{' + low + ',..,' + high + '}<br>';
+						htmlStats += 'Eth.Surge : +' + etherealSurge + 'MP<br>';  
 						var xp = Math.round(75 * burstOfFlames / (burstOfFlames + 37.5));
-						htmlStats += 'BrstfFlms: ' + total.int / 10 + 'dmg, ' + xp + 'XP<br></font>'; 
+						htmlStats += 'BrstfFlms: ' + total.int / 10 + 'dmg, ' + xp + 'XP<br></font>';
+						// Tooltips 
+						htmlStats += '<p class="descriptionSkills">Earthquake: +' + earthquake + ' INT.<br><font size ="-2">Based on unbuffed Int: (' + totalUnbuffed.int + ')<br>';
+						htmlStats += 'Unbuffed Int in range of ' + low + ' ... ' + high + ' will have same effect.</font><br><br>'; 
+						htmlStats += 'Ethereal Surge: +' + etherealSurge + 'MP <font size ="-2">for non Mages<br>based on Int: (' + total.int + ')</font><br><br>';
+						htmlStats += 'Burst of Flames: +' + (Math.ceil(total.int / 10)) + 'DMG +' + xp + 'XP<br><font size ="-2">Base on Int: (' + total.int + ')<br></font>';
+						htmlStats += '</p></a>';
 						}
+					
+					// HEALER	
 					if (user.stats.class == 'healer') {
 						htmlStats += '<font sitze ="-2">Healing Light: +' + healingLight + 'HP <br>';
 						htmlStats += 'Sear.Brightness: ' + searingBrightness + '<br>'; 
 						htmlStats += 'Protective Aura: +' + protectiveAura + 'CON<br>';
-						htmlStats += 'Blessing: +' + blessing + 'HP</fron>';
+						htmlStats += 'Blessing: +' + blessing + 'HP</font>';
 						}
 					//WARRIOR
 					if (user.stats.class == 'warrior') {
@@ -639,20 +1007,97 @@ function parseData() {
 					'- per To-Do: ' + (Math.round((dailyToDo * 100)) / 100) + '<br>' +
 					'</div></section>';
 					 	
-
-
-
-
 }; // end of function calculateAttributes
 
 
 
-//////////////////////////////
-//// calculate and display wardrobes and stats
-//////////////////////////////
 
-function picsToFlexbox(copyGear) {
-	htmlStats +='<br>'; 	
+//////////////////////////////
+//// calculate and display Skills, Wardrobes and stats
+//////////////////////////////	
+
+///////////push in skills container 
+evaluateTasks(); 
+
+htmlStats =		'<div class="skills-Container">'; //needs class for toggling between Wardrobes and Skills FrontEnds
+
+htmlStats +=		'<div id="skill1"><br>'+ 
+				'<button type="button" id="castSkill1" style="color: #2995cd"> Cast ' + skills[user.stats.class].field1.name + '</button>'+
+				'<br><br>'+
+				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'cost of buff: ' + skills[user.stats.class].field1.cost + '<br>' +
+				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field1.cost) + '<br>' +
+				'<br>' + 
+				'<button type="button" id="sub1" class="sub">-</button>'+
+    			'<input type="number" id="amount1" value="1" class="number">'+
+    			'<button type="button" id="add1" class="add">+</button><br>'+
+				'<br>'+
+				'</div>'+
+
+				'<div id="skill2"><br>'+
+				'<button type="button" id="castSkill2" style="color: #2995cd"> Cast ' + skills[user.stats.class].field2.name + '</button>';
+				if (user.stats.class == 'wizard') {htmlStats += '<br>on ' + skills.wizard.field2.task};
+				if (user.stats.class == 'warrior') {	htmlStats += '<br>on ' + skills.warrior.field2.task};
+htmlStats +=		'<br><br>'+
+				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'cost of buff: ' + skills[user.stats.class].field2.cost + '<br>' +
+				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field2.cost) + '<br>' +
+				'<br>' + 
+				'<button type="button" id="sub2" class="sub">-</button>'+
+    			'<input type="number" id="amount2" value="1" class="number">'+
+				'<button type="button" id="add2" class="add">+</button>'+
+				'<br>'+ 
+				'</div>'+
+				
+				'<div id="skill3"><br>'+
+				'<button type="button" id="castSkill3" style="color: #2995cd"> Cast ' + skills[user.stats.class].field3.name + '</button>';
+				if (user.stats.class == 'rogue') {htmlStats += '<br>on ' + skills.rogue.field3.task};
+htmlStats += 	'<br><br>'+
+				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'cost of buff: ' + skills[user.stats.class].field3.cost + '<br>' +
+				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field3.cost) + '<br>' +
+				'<br>' + 
+				'<button type="button" id="sub3" class="sub">-</button>'+
+    			'<input type="number" id="amount3" value="1" class="number">'+
+    			'<button type="button" id="add3" class="add">+</button>'+
+				'<br>'+
+				'</div>'+
+				
+				'<div id="skill4"><br>'+
+				'<button type="button" id="castSkill4" style="color: #2995cd"> Cast ' + skills[user.stats.class].field4.name + '</button>';
+				if (user.stats.class == 'rogue') {htmlStats += '<br>on ' + skills.rogue.field4.task};
+htmlStats += 	'<br><br>'+
+				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'cost of buff: ' + skills[user.stats.class].field4.cost + '<br>' +
+				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field4.cost) + '<br>' +
+				'<br>' + 
+				'<button type="button" id="sub4" class="sub">-</button>'+
+    			'<input type="number" id="amount4" value="1" class="number" />'+
+    			'<button type="button" id="add4" class="add">+</button>'+
+				'<br>'+
+				'</div>';
+	
+	htmlStats += '<div>Return to Wardrobe Intelligence: '+
+				'<input type="checkbox" id="rememberGear"></input>'+
+				'</div>';  			
+				
+	
+	
+	htmlStats += '</div>'; //end div skills-Container 
+	
+	
+//////////end push in skills container
+
+
+
+
+	
+//	drawFlexboxes;
+
+//function drawFlexboxes() {		
+
+	function picsToFlexbox(copyGear) {
+		htmlStats +='<br>'; 	
 		for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
        	 	var gear = gearLocation[i];
 			if (gear in copyGear === true && typeof copyGear[gear] != 'undefined' ) {
@@ -662,22 +1107,62 @@ function picsToFlexbox(copyGear) {
 					'<br>STR: ' + content.gear.flat[copyGear[gear]].str + ' CON: ' + content.gear.flat[copyGear[gear]].con + '</p>' ;
 					} // end if copyGear[gear]
 			} // end for var i in gearLocation
-	htmlStats +='</a></div>'; // end single box (flexbox 2 - intelligence)
+		htmlStats +='</a></div>'; // end single box (flexbox 2 - intelligence)
+	} // end function picsToFlexboxes
+
+
+	$('H1').hide();
+	$('#headerExtras').html(
+		'<div class="navbar">' +
+			'<b>Habitican Wardrobes' +
+			//'<br><span class="small">v. 2.0 (July 2019)</span>' +
+			'</b>' +
+			'<a id="toggleFrontEnd"><i class="fa fa-copy" aria-hidden="true"></i>&nbsp; Wardrobes/Skills</a>' +
+  			'<div class="dropdown">' +
+				'<button class="dropbtn"><i class="fa fa-book fa-fw" aria-hidden="true"></i>&nbsp; Data ' +
+      			'<i class="fa fa-caret-down"></i>' +
+    			'</button>' +
+    			'<div class="dropdown-content">' +
+      				'<a id="b">User Data</a>' +
+      				'<a id="a">Habitica Content</a>' +
+      				'<a id="c">Skills</a>' +
+	  				'<a id="DGR">Gear</a>' +
+	  				'<a id="TAS">Tasks</a>' +
+	  				'<a id="HLP">Help</a>' +
+	  				'<a id="VER">Version Info</a>' +
+    			'</div>' +
+  			'</div> ' +
+			'<a id="SET"><i class="fa fa-cog fa-fw" aria-hidden="true"></i>&nbsp; Settings</a>' +
+  			'<div class="topnav-right">' +  
+  				'<a id="RFR"><i class="fa fa-refresh" aria-hidden="true"></i>&nbsp; Refresh</a>' +
+				'<b>' + user.profile.name + '<br><span class="small">' + user.stats.class + '</span></b>' +
+			'</div>' +
+		'</div>'
+	);
+
 	
-} // end function picsToFlexboxes
+	if (hardMode == "true") {
+			document.getElementById("hardMode").checked = true;
+			}
+	else {
+			document.getElementById("hardMode").checked = false;
+			} 
+	
+	evaluateTasks();
+	checkLegendaryGear();
+	getMaxGear(); 
 
 
+	htmlStats += '<div class="wardrobes-Container">'; 
 	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var
 	legendary.headAccessory = copyGear.headAccessory; // Accessory in legendary is deriven from effective equipment
 	legendary.back = copyGear.back;
 	legendary.body = copyGear.body;
 	legendary.eyewear = copyGear.eyewear;
-		
-	htmlStats = '<div class="flex-container">'; 
-	
 	//start flexbox 1
 	// initialGear: 
 	htmlStats += '<div id="Initial" style="background-color: #cccccc"><h3>Equipped Gear:</h3>'; 
+	
 	calculateAttributes(copyGear); // continue with content of flexbox 1 there
 	htmlStats +='<br>'; 	
 		for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
@@ -782,130 +1267,26 @@ function picsToFlexbox(copyGear) {
 				'<div id="legenda">Legendary wardrobe</div>' +
 				'<div>You have ' + dailyCompleted + ' of ' + dailyTotal + ' dailies completed.<div></div></div>' +
 				'<div>Your most valueable taks is: </div><div> ' + mostValueableTaskName + '<div></div><div> with a value of: ' + Math.round(mostValueableTaskValue) + '</div><div></div>' +
-				'<input id="a" type="submit" value="Content"><br>' +
-	 			'<input id="b" type="submit" value="User data"><br>' +
-				'<input id="TAS" type="submit" value="Tasks"><br>' +
-				'<input id="HLP" type="submit" value="Help"><br>' +
-				'<input id="DGR" type="submit" value="Display Gear"><br>' +
-				'<input id="RFR" type="submit" value="Refresh"><br>'
-				'</div>'; // end single box;
-				
-	// last flexbox for graphical information about skills
-	
-	google.charts.load('current', {'packages':['corechart']}); 
-	google.charts.setOnLoadCallback(drawChart);
-
-	function drawChart() {
-			// calculate how much unbuffed STR you currently have
-			var strength = 0;
-			var valorousPresence = 0; 
-			
-			strength = Math.floor(user.stats.lvl / 2); if ( strength > 50 ) { strength = 50;} 
-			user.items.gear.equipped.forEach(function(gear) {
-		if (gear in content.gear.flat[user.items.gear.equipped[gear]].str) {
-				strength += (content.gear.flat[user.items.gear.equipped[gear]].str);
-				}
-		})
-			/*
-			strength += (content.gear.flat[user.items.gear.equipped.head].str);
-			strength += (content.gear.flat[user.items.gear.equipped.armor].str);
-			strength += (content.gear.flat[user.items.gear.equipped.shield].str);
-			strength += (content.gear.flat[user.items.gear.equipped.weapon].str);
-			strength += (content.gear.flat[user.items.gear.equipped.headAccessory].str);
-			strength += (content.gear.flat[user.items.gear.equipped.eyewear].str);
-			strength += (content.gear.flat[user.items.gear.equipped.body].str);
-			strength += (content.gear.flat[user.items.gear.equipped.back].str);
-			if (content.gear.flat[user.items.gear.equipped.head].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.head].str)};
-			if (content.gear.flat[user.items.gear.equipped.armor].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.armor].str)};
-			if (content.gear.flat[user.items.gear.equipped.shield].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.shield].str)};
-			if (content.gear.flat[user.items.gear.equipped.weapon].klass == user.stats.class) {strength += 0.5 * (content.gear.flat[user.items.gear.equipped.weapon].str)};
-			*/
-			strength += user.stats.str; 
-			valorousPresence = Math.ceil((20 * strength / (200 + strength)));
-			
-			var data = google.visualization.arrayToDataTable([
-			['STR', 'Valorous Presence', {'type': 'string', 'role': 'style'}],
-			[ 23, 2, null], [ 36, 3, null], [ 50, 4, null],
-			[ 67, 5, null], [ 86, 6, null], [ 108, 7, null],
-			[ 134, 8, null], [ 164, 9, null],
-			[ strength, valorousPresence, 'point {size: 12; shape-type: star; fill-color: #a52714;}'], // Draw the star to display current values
-			[ 200, 10, null], [ 245, 11, null], [ 300, 12, null]
-			]);
-
-		var options = {
-			title: 'Valorous Presence = (20*STR / (200+STR))',
-			// tooltip: {trigger: 'none'}, 
-			//hight: 300, 
-			//width: 600, 
-			vAxis: {title: 'Valorous Presence', minValue: 2, maxValue: 12, ticks: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},
-			hAxis: {title: 'STR (Level + Equipment + Class Bonus + Allocation)', fontSize: 6, minValue: 23, maxValue: 300, scaleType: 'null', ticks: [23, 36, 50, 67, 86, 108, 134, 164, 200, 245, 300]},
-			legend: 'none'
-			};
-			var chart = new google.visualization.ScatterChart(document.getElementById('Valorous Presence'));
-			chart.draw(data, options);
-			
-			
-			// calculate how much unbuffed PER you currently have
-			var perception = 0;
-			var ToolsOfTheTrade = 0; 
-			
-			perception = Math.floor(user.stats.lvl / 2); if ( perception > 50 ) { perception = 50;} 
-			perception += (content.gear.flat[user.items.gear.equipped.head].per);
-			perception += (content.gear.flat[user.items.gear.equipped.armor].per);
-			perception += (content.gear.flat[user.items.gear.equipped.shield].per);
-			perception += (content.gear.flat[user.items.gear.equipped.weapon].per);
-			perception += (content.gear.flat[user.items.gear.equipped.headAccessory].per);
-			perception += (content.gear.flat[user.items.gear.equipped.eyewear].per);
-			perception += (content.gear.flat[user.items.gear.equipped.body].per);
-			perception += (content.gear.flat[user.items.gear.equipped.back].per);
-			if (content.gear.flat[user.items.gear.equipped.head].klass == user.stats.class) {perception += 0.5 * (content.gear.flat[user.items.gear.equipped.head].per)};
-			if (content.gear.flat[user.items.gear.equipped.armor].klass == user.stats.class) {perception += 0.5 * (content.gear.flat[user.items.gear.equipped.armor].per)};
-			if (content.gear.flat[user.items.gear.equipped.shield].klass == user.stats.class) {perception += 0.5 * (content.gear.flat[user.items.gear.equipped.shield].per)};
-			if (content.gear.flat[user.items.gear.equipped.weapon].klass == user.stats.class) {perception += 0.5 * (content.gear.flat[user.items.gear.equipped.weapon].per)};
-			perception += user.stats.per; 
-			ToolsOfTheTrade = Math.ceil((100 * perception / (50 + perception)));
-			
-			var data = google.visualization.arrayToDataTable([
-			['PER', 'Tools of the Trade', {'type': 'string', 'role': 'style'}],
-			[ 20, 29, null], [ 30, 38, null], [ 40, 45, null],
-			[ 50, 50, null], [ 60, 55, null], [ 70, 59, null],
-			[ 80, 62, null], [ 90, 65, null], [ 100, 67, null],
-			[ perception, ToolsOfTheTrade, 'point {size: 12; shape-type: star; fill-color: #a52714;}'], // Draw the star to display current values
-			[ 110, 69, null], [ 120, 71, null], [ 130, 73, null],
-			[ 140, 74, null], [ 150, 75, null], [ 160, 77, null],
-			[ 170, 78, null], [ 180, 79, null], [ 190, 80, null]
-			]);
-
-		var options = {
-			title: 'Tools of the Trade = (100*PER / (50+PER))',
-			// tooltip: {trigger: 'none'}, 
-			//hight: 300, 
-			//width: 600, 
-			vAxis: {title: 'Tools of the Trade', minValue: 29, maxValue: 80, ticks: [29, 45, 55, 62, 67, 71, 74, 77, 79, 80]},
-			hAxis: {title: 'PER (Level + Equipment + Class Bonus + Allocation)', fontSize: 6, minValue: 20, maxValue: 190, scaleType: 'null', ticks: [20, 40, 60, 80, 100, 120, 140, 160, 180, 190]},
-			legend: 'none'
-			};
-			
-			
-			var chart = new google.visualization.ScatterChart(document.getElementById('Tools of the Trade'));
-			chart.draw(data, options);
-			
-			
-			}; // end function drawChart
-			
-	
-	htmlStats +='</div><div id="Charts">Charts:' +
-				'<div id="Valorous Presence" style="width: 600px; height: 250px;">Skill: Valorous Presence: </div>'+ 
-				'<div id="Tools of the Trade" style="width: 600px; height: 250px;">Skill: Tools of the Trade: </div>'+ 
-	
-				'</div>'; // end Flexbox; end Flexboxes
+				'</div>' + // end single box;
+				'</div>'; // end Flexboxes
 
 			
 
 	$('#userStats').html(htmlStats);
 	addBorderToSelectedWardrobe();
+	
+	getFirstLocalStorage();
+	
 
-	function addBorderToSelectedWardrobe() {
+
+//	} // end function drawFlexboxes; 
+
+
+
+function addBorderToSelectedWardrobe() {
+	
+	//this is triggerd 2x. 1- immediately, 2- after all Ajax-calls are done. 
+	// display of data in last Flexbox
 	$("#percept").hide();
 	$("#constit").hide();
 	$("#strengt").hide();
@@ -914,6 +1295,7 @@ function picsToFlexbox(copyGear) {
 	$("#legenda").hide();
 	$("#initial").hide();
 	
+	//border to displayed wardrobes
 	$("#Intelligence").css({"border": "none", "border-color": "yellow"});
 	$("#Perception").css({"border": "none", "border-color": "yellow"});
 	$("#Constitution").css({"border": "none", "border-color": "yellow"});
@@ -921,165 +1303,352 @@ function picsToFlexbox(copyGear) {
 	$("#Blessing").css({"border": "none", "border-color": "yellow"});
 	$("#Legendary").css({"border": "none", "border-color": "yellow"});
 
-	
 	if (wardrobeEquipped == 'Initial') { // show if initial wardrobe is not one of Habitican Wardrobes, else hide Initial
 		$('#Initial').css({"border": "solid", "border-color": "#4f2a93"});
 		} else
 		{$('#Initial').hide();}
-	console.log(JSON.stringify(wardrobeEquipped));
-	if (wardrobeEquipped.includes('Intelligence')) {$('#intelli').show(); $("#Intelligence").css({"border": "solid", "border-color": "#4f2a93"});}
-	if (wardrobeEquipped.includes('Perception')) {$('#percept').show(); $("#Perception").css({"border": "solid", "border-color": "#af8af3"});}
-	if (wardrobeEquipped.includes('Constitution')) {$('#constit').show();$("#Constitution").css({"border": "solid", "border-color": "#4f2a93"});}
-	if (wardrobeEquipped.includes('Strength')) {$('#strengt').show();$("#Strength").css({"border": "solid", "border-color": "#4f2a93"});}
-	if (wardrobeEquipped.includes('Blessing')) {$('#blessin').show();$("#Blessing").css({"border": "solid", "border-color": "#4f2a93"});}
-	if (wardrobeEquipped.includes('Legendary')) {$('#legenda').show();$("#Legendary").css({"border": "solid", "border-color": "#4f2a93"});}
-
-	}; // end of function addBorderToSelectedWardrobe
+	if (wardrobeEquipped.includes('intelligence')) {$('#intelli').show(); $("#Intelligence").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped.includes('perception')) {$('#percept').show(); $("#Perception").css({"border": "solid", "border-color": "#af8af3"});}
+	if (wardrobeEquipped.includes('constitution')) {$('#constit').show();$("#Constitution").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped.includes('strength')) {$('#strengt').show();$("#Strength").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped.includes('blessing')) {$('#blessin').show();$("#Blessing").css({"border": "solid", "border-color": "#4f2a93"});}
+	if (wardrobeEquipped.includes('legendary')) {$('#legenda').show();$("#Legendary").css({"border": "solid", "border-color": "#4f2a93"});}
+}; // end of function addBorderToSelectedWardrobe
 
 
 
 
-    //////////////////////////////////////////////////////////////////////
-    ////   equip function      (within paseData)   ///////////////////////
-    //////////////////////////////////////////////////////////////////////
+function prepareSkillAmounts () {
+	var skillAmount = [];
+	for (var i = 1; i <= 4; i++) {
+		var fetchField = "skill" + JSON.stringify(i); 
+		var fetchAmount = "amount" + JSON.stringify(i);
+		var inputFieldLS = storeData(fetchField);
+		
 
-	function equip(wardrobe) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
-		var currentItem = '';
-		var typeOfItem = '';
-		//var currenType = '';
-		var base = $.when({});
-		var j = 0;
-		var i = 0;
-		console.log(wardrobe + JSON.stringify(wardrobe));
-		$.each(wardrobe, function(key, itemToEquip){
-			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
-			typeOfItem = content.gear.flat[itemToEquip].type; //eg displays: head (good)
-			// Second determine which item is located in the correspondig slot [Helm, Armor...] looking at user..equipped]
-			currentItem = user.items.gear.equipped[typeOfItem]; //eg displays: helm_special_2
-			// verify if item is already equipped
-			if (itemToEquip == user.items.gear.equipped[typeOfItem]) {
-				equipCountSkip++;
-				htmlEnd += content.gear.flat[itemToEquip].text + '<br>';
-				if (equipCountSkip===Object.keys(wardrobe).length){ // if equipCountSkip = amount of inventory in wardrobe
-					equipCountSkip=0;
-					$("#modalContent").html('already equipped');
-					$('#modal').show();
-					setInterval(function(){
-					$("#modal").hide();
-					},1500)
-				} // end if equipCountSkip
-			} else {
-				htmlEnd += content.gear.flat[itemToEquip].text + '<br>';
-				base = base.then(fireAjax(itemToEquip, typeOfItem));	
-			} // end else
-		}); // end each
+		if (storeData(fetchField) == null || (storeData(fetchField) == "undefined")) {
+				skillAmount[i-1] = "1"; 
+				}
+		if ((storeData(fetchField) != null) && (storeData(fetchField) != "undefined")) { 
+				skillAmount[i-1] = storeData(fetchField);  
+			}
+			storeData(fetchField, skillAmount[i-1]); 
+			document.getElementById(fetchAmount).value = skillAmount[i-1];
+	}	// end for
+} // end function prepareSkillAmounts
 
 
-	function fireAjax(itemToEquip, typeOfItem) {
-		return function(){
-			var defer = $.Deferred();
-			$("#modalContent").html('equipping gear can take 10 seconds<br>afterwards please sync Habitica');
-			$("#modal").show();
-				$.ajax({
-					url: 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip,
+// limit the amount of skills to the current Mana-level
+function getAmountOfSkill(field) {
+
+		if (field == 'field1') {
+			amountOfSkill = document.querySelector("#amount1").value;
+			if (amountOfSkill > 0) {storeData("skill1", parseInt(document.querySelector("#amount1").value));} // use parseInt to avoid paratheses in localStorage!
+			if (Math.floor(user.stats.mp / skills[user.stats.class].field1.cost) <= amountOfSkill) {
+					amountOfSkill = Math.floor((user.stats.mp) / (skills[user.stats.class].field1.cost));
+					if (amountOfSkill = "NaN") {
+						amountOfSkill = 0;  
+						}
+			//document.querySelector("#amount1").value = amountOfSkill;
+			}
+		}
+		
+		
+		if (field == 'field2') {
+			amountOfSkill = document.querySelector('#amount2').value;
+			if (amountOfSkill > 0) {storeData('skill2', parseInt(document.querySelector("#amount2").value));} // use parseInt to avoid paratheses in localStorage!
+			if (Math.floor((user.stats.mp / skills[user.stats.class].field2.cost))	 < amountOfSkill) {
+					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field2.cost);
+					if (amountOfSkill = "NaN") {
+						amountOfSkill = 0;  
+					}
+			console.log(amountOfSkill);
+			// document.querySelector("#amount1").value = amountOfSkill;
+			}
+		}
+		
+		if (field == 'field3') {
+			amountOfSkill = document.querySelector("#amount3").value;
+			if (amountOfSkill > 0) {storeData("skill3", parseInt(document.querySelector("#amount3").value));} // use parseInt to avoid paratheses in localStorage!
+			if (Math.floor((user.stats.mp / skills[user.stats.class].field3.cost))	 < amountOfSkill) {
+					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field3.cost);
+					if (amountOfSkill = "NaN") {
+					amountOfSkill = 0;  
+					}
+			console.log(amountOfSkill);
+			// document.querySelector("#amount1").value = amountOfSkill;
+			}
+		}
+		
+		
+		
+		if (field == 'field4') {
+			amountOfSkill = document.querySelector("#amount4").value;
+			if (amountOfSkill > 0) {storeData("skill4", parseInt(document.querySelector("#amount4").value));} // use parseInt to avoid paratheses in localStorage!
+			if (Math.floor((user.stats.mp / skills[user.stats.class].field4.cost))	 < amountOfSkill) {
+					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field4.cost);
+					if (amountOfSkill = "NaN") {
+					amountOfSkill = 0;  
+					}
+			console.log(amountOfSkill);
+			// document.querySelector("#amount1").value = amountOfSkill;
+			}
+		}
+		
+		return amountOfSkill;
+	} // end of getAmountOfSkill
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////
+////   equip function      (within paseData)   ///////////////////////
+////   and castSkill function				   ///////////////////////			
+//////////////////////////////////////////////////////////////////////
+
+		
+// https://petetasker.com/using-async-await-jquerys-ajax/
+
+async function doAjax(url){
+		let result;  
+		try {
+			result = await $.ajax({	
+					url: url,
 					type: 'POST',
 					dataType: 'json',
 					cache: false,
 					beforeSend: function(xhr){
+						//xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
 						xhr.setRequestHeader('x-api-user', userID);
 						xhr.setRequestHeader('x-api-key',  apiToken);
 					},
-					success: function(){user.items.gear.equipped[typeOfItem] = itemToEquip;},
-					complete: function(){defer.resolve();},
-					error: function(){alert('Error firing Ajax. No such key: ' + itemToEquip + ' in ' + typeOfItem);}
-				}); // end ajax
-				defer.promise().then(function(){ // this was hard to code // might be anywhere in the code
-						equipCount++;
-						if (equipCount + equipCountSkip === Object.keys(wardrobe).length){
-							equipCount = 0;
-							equipCountSkip = 0;
-							$('#modal').hide();
-							compareGear(); 
-							parseData();
-						}		
-				});
-			return defer.promise();
-		// example here: http://www.jefferydurand.com/jquery/sequential/javascript/ajax/2015/04/13/jquery-sequential-ajax-promise-deferred.html
-		}; // end of wrap function
-	}; // end of fireAjax(itemToEquip)
-}; // end of equip
+					success: function(result){}
+			});
+		return result;
+		} catch (error) {
+			console.log(error.responseText);
+		}						
+}; // end ajax
+
+
+function wait(waitTime) {
+  return new Promise(resolve => setTimeout(() => {
+    resolve()
+  }, waitTime));
+}
+
+async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {  
+  if (user.stats.class == 'wizard' && field == 'field2') {url += '?targetId=' + skills.wizard[field].taskId;}
+  if (user.stats.class == 'warrior'&& field == 'field2') {url += '?targetId=' + skills.warrior[field].taskId;}
+  if (user.stats.class == 'rogue' && (field == 'field3' || field == 'field4')) {url += '?targetId=' + skills.rogue[field].taskId;}  
+  for (var i = 1; i <= amount; i++) {
+		$('#modalContent').html('casting: ' + name + '<br>' + i + '/' + amount);		
+		if (url.includes('?')) {
+			$('#modalContent').html('casting: ' + name + '<br> on ' + skills[user.stats.class][field].task + '<br>' + i + '/' + amount);		
+			}		
+		await doAjax(url);
+		user.stats.mp = (user.stats.mp - cost);
+  		await wait(1000+(1000 * amount / (0.01 * amount + 20)));
+  		}				
+  console.log("skills complete!");
+  parseData();
+} // end callSkills...
 
 
 
-	////////////////////////////////////
-	//// Buttons ///////////////////////
-	////////////////////////////////////
+async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
+		$('#modalContent').html('Equipping...');
+		$('#modal').show();
+		//console.log('caller: ' + .caller);
+		equipCount = 0;
+		equipCountSkip = 0; 
+		for (var i in gearLocation) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+			itemToEquip = wardrobe[gearLocation[i]];  // fromat gear: head_base_0 e.g.
+			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
+			typeOfItem = content.gear.flat[itemToEquip].type; //eg displays: head (good)
+			// verify if item is already equipped
+			htmlEnd += content.gear.flat[itemToEquip].text + '<br>';
+					
+			if (user.items.gear.equipped[typeOfItem] == itemToEquip) {
+					equipCountSkip++;
+					if (equipCountSkip===Object.keys(wardrobe).length){ // if equipCountSkip = amount of inventory in wardrobe
+						$('#modalContent').html('already equipped');
+						await wait(1000);
+					} // end if equipCountSkip
+			} else {	
+				url = 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip;
+				$('#modalContent').html('Equipping wardrobe ' + nameOfWardrobe + '<br>' + (equipCountSkip + equipCount) + '/8');
+				await doAjax(url);	 
+				user.items.gear.equipped[typeOfItem] = itemToEquip;
+				equipCount++; 
+				await wait(50); 		
+			} // end else
+		}; // end each
+		await wait(500);
+		$('#modal').hide();
+		getEquippedWardrobes();
+} // end function callWardrobe
+  
+  
+async function waitForAlert() {
+	alert("waiting... please check if everything is as expected!");
+}  
+ 
+async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, field){ // amountOfSkill, API, "eg. Tools of the Trade, 25, perception, Object
+	if (wardrobeEquipped.includes(nameOfWardrobe)) {
+				console.log(nameOfWardrobe + 'already equipped');
+				} else {
+					console.log("calling wardrobe " + nameOfWardrobe);
+					await callWardrobe(wardrobe, nameOfWardrobe); 	// wardrobe ist Object here
+					
+				}
+			$('#modalContent').html('Casting...');
+			$('#modal').show();	
+			await callSkill(amountOfSkill,
+				    skills[user.stats.class][field].API, 
+				    skills[user.stats.class][field].name,
+				    skills[user.stats.class][field].cost,
+					skills[user.stats.class][field].nameOfWardrobe, 
+					field);
+			getEquippedWardrobes();
+			console.log(wardrobeEquipped, rememberGear);
+			if (wardrobeEquipped.includes('intelligence')) {
+					console.log(nameOfWardrobe + 'already equipped');
+			} else {
+					if (rememberGear=="true") { // remberGear displays as "Return to wardrobe Intelligence" on the front End. Think in FrontEnd locig here!
+							await callWardrobe(intelligence, 'Intelligence');
+					} else { 
+							console.log("OK. leaving " + name + " equipped.");
+							$('#modal').hide();}
+			}	
+			getEquippedWardrobes();
+} // end callTriple
+					
+async function prepareTriple(amount, url, name, cost, wardrobe, nameOfWardrobe, field){
+	if (user.stats.mp < cost) {		// not enoght mana  ==> break up immediately
+			$('#modalContent').html('Not enough Mana.');
+			$('#modal').show()
+			await wait(1000);
+			$('#modal').hide();	
+	} else {
+			if (user.stats.lvl < skills[user.stats.class][field]){ // level not high enough
+					$('#modalContent').html('You need to reach level ' + skills[user.stats.class][field].unlock + ' to cast ' + name);
+					$('#modal').show();
+					await wait(1000);
+					$('#modal').hide();
+		 	} else {
+					callTriple(amount, url, name, cost, wardrobe, nameOfWardrobe, field);
+				   } 
+				
+	} 
+} // end function prepareTriple
 
+
+
+/////////////////////////////////////////////////
+/////////////////////////////////////////////////
+///////////////// Buttons ///////////////////////
+/////////////////////////////////////////////////
+
+	 
 	 $('#buttons').html(buttons);
-
-	 $('#a').click(function(){$('#displayContent').html('<div>This is Habitica\'s content: <br><pre>' + JSON.stringify(content.gear.flat, null, 4) + '</pre></div>');});
-	 $('#b').click(function(){$('#displayContent').html('<div>This is your user profile: <br><pre>' + JSON.stringify(user, null, 4) + '</pre></div>');});
-	 $('#TAS').click(function(){$('#displayContent').html('<div>These are your tasks: <br><pre>' + JSON.stringify(tasksFromDb, null, 4) + '</pre></div>'); evaluateTasks();});
+	 
+	 $(document).click(function(event) {
+	 	//if you click on anything except the modal itself or the "open modal" link, close the modal
+ 			if ($(event.target).closest("#modalDataContent, #TAS, #a, #b, #c, #DGR").length == 0) {
+					$('#modalData').hide();
+			}
+			if ($(event.target).closest("#modalSettingsContent, #SET").length == 0) {
+					$('#modalSettings').hide();
+			}
+			if ($(event.target).closest("#modalVersionContent, #VER").length == 0) {
+					$('#modalVersion').hide();
+			}
+				
+			if ($(event.target).closest(".close").length == 1) {
+				$('#modal').hide();
+				$('#modalData').hide();
+				$('#modalSettings').hide();
+				$('#modalVersion').hide();
+				}	
+	 });
+ 	 $('#a').click(function(){
+	 			$('#modalDataContent').html(
+				'<span class="close">&times;</span>' +
+				'<div>This is Habitica\'s content: <br><pre>' + 
+				JSON.stringify(content, null, 4) +  
+				'</pre></div>');
+				$('#modalData').show(); 
+				});
+	 $('#b').click(function(){
+	 			$('#modalDataContent').html(
+				'<span class="close" class ="fixedTop">&times;</span>' +
+				'<div>This is your user profile: <br><pre>' + 
+				JSON.stringify(user, null, 4) +  
+				'</pre></div>');
+				$('#modalData').show(); 
+				});
+	 $('#c').click(function(){	 
+		 		$('#modalDataContent').html(
+				'<span class="close">&times;</span>' +
+				'<div>These are your skills: <br><pre>' + 
+				JSON.stringify(skills[user.stats.class], null, 4) +  
+				'</pre></div>');
+				$('#modalData').show(); 
+				});  	 
+	 $('#TAS').click(function(){
+	 			$('#modalDataContent').html(
+				'<span class="close">&times;</span>' +
+				'<div>These are your tasks: <br><pre>' + 
+				JSON.stringify(tasksFromDb, null, 4) +  
+				'</pre></div>');
+				$('#modalData').show(); 
+				});
+	 $('#SET').click(function(){
+	 			$('#modalSettings').show();
+				});		
+	 $('#VER').click(function(){
+	 			$('#modalVersion').show();
+				});					
 	 $('#INT').click(function(){
-				htmlEnd = '<div>Wardrobe INT <br>';
-				equip(intelligence);
+	 			htmlEnd = '<div>Wardrobe INT <br>';
+				callWardrobe(intelligence, "Intelligence");
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				addBorderToSelectedWardrobe('intelligence');
 				});
 	 $('#PER').click(function(){
 	 			htmlEnd = '<div> Wardrobe PER <br>';
-				equip(perception);
+				callWardrobe(perception, "Perception");
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				addBorderToSelectedWardrobe('perception');
 				});
 	  $('#CON').click(function(){
 	 			htmlEnd = '<div> Wardrobe CON <br>';
-				equip(constitution);
+				callWardrobe(constitution, "Constitution");
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				addBorderToSelectedWardrobe('constitution');
 				});
 	 $('#LEG').click(function(){
 	 			htmlEnd = '<div>Wardrobe Legendary Equipment <br>';
-				equip(legendary);
+				callWardrobe(legendary, "Legendary");
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				addBorderToSelectedWardrobe('legendary');
 				});
 	 $('#BLE').click(function(){
 	 			htmlEnd = '<div>Wardrobe Blessing (CON + INT) <br>';
-				equip(blessing);
+				callWardrobe(blessing, 'Blessing');
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				addBorderToSelectedWardrobe('blessing');
 				});		
 	 $('#STR').click(function(){
 	 			htmlEnd = '<div>Wardrobe Strength <br>';
-				equip(strength);
+				callWardrobe(strength, 'Strength');
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				addBorderToSelectedWardrobe('strength');
 				});	
-	 $('#TOT').click(function(){
-	 			$('#modalContent').html('casting: Tools of the Trade');
-				$("#modal").show();
-				$.ajax({
-					url: 'https://habitica.com/api/v3/user/class/cast/toolsOfTrade',
-					type: 'POST',
-					dataType: 'json',
-					cache: false,
-					beforeSend: function(xhr){
-						xhr.setRequestHeader('x-api-user', userID);
-						xhr.setRequestHeader('x-api-key',  apiToken);
-						},
-					success: function(){$("#modal").hide();},
-					error: function(){$("#modal").hide();alert('Error using skill: Tools of the Trade');}
-					}); //end of ajax
-				}); //end of click
 	$('#HLP').click(function(){
-				htmlEnd =   '<div>Version 1.3 (Feb. 2019) <br><br>' +
+				htmlEnd =   '<div>Version 2.0 (Jul. 2019) <br><br>' +
 							'For help see <a href="http://habitica.wikia.com/wiki/Habitican_Wardrobes">Habitican Wardrobes</a>' +
 							'<br>';
 				$('#displayContent').html(htmlEnd);
@@ -1091,18 +1660,104 @@ function picsToFlexbox(copyGear) {
 				}); // end of click
 	$('#DGR').click(function(){
 			getMaxGear();
-			var displayGear='<div><pre>Best INT Gear: ' + JSON.stringify(intelligence, null, 4) + '</pre></div>' +
+			var displayGear='<span class="close">&times;</span>' +
+							'<div><pre>Best INT Gear: ' + JSON.stringify(intelligence, null, 4) + '</pre></div>' +
 							'<div><pre>Best PER Gear: ' + JSON.stringify(perception, null, 4) + '</pre></div>' +
 							'<div><pre>Best STR Gear: ' + JSON.stringify(strength, null, 4) + '</pre></div>' +
 							'<div><pre>Best CON Gear: ' + JSON.stringify(constitution, null, 4) + '</pre></div>' +
 							'<div><pre>Best Blessing Gear: ' + JSON.stringify(blessing, null, 4) + '</pre></div>' +
-							'<div><pre>Initial Gear: ' + JSON.stringify(user.items.gear.equipped, null, 4) + '</pre></div>' +
+							'<div><pre>Initial Gear HB: ' + JSON.stringify(user.items.gear.equipped, null, 4) + '</pre></div>' +
+							'<div><pre>Initial Gear JS: ' + JSON.stringify(initialGear, null, 4) + '</pre></div>';
 							'<div><pre>Legendary Gear: ' + JSON.stringify(legendary, null, 4) + '</pre></div>';
-			$('#displayContent').html(displayGear);
+							
+			$('#modalDataContent').html(displayGear);
+			$('#modalData').show();
 			}); // end of click
 	$('#RFR').click(function(){
 			fetchData();
 			}); // end of click
+	$('#hardMode').click(function(){
+		hardMode = JSON.stringify($('#hardMode').is(":checked")); 
+		storeData("Hard Mode", hardMode);
+			parseData(); 
+			}); // end of click
+	$('#toggleFrontEnd').click(function(){	
+		frontEnd = storeData("FrontEnd"); 
+		if (frontEnd == null) {frontEnd = "wardrobes"; }
+		if (frontEnd == "wardrobes") {
+			$('.wardrobes-Container').hide();
+			$('.skills-Container').show(); 
+			storeData("FrontEnd", "skills"); 
+  			}
+		if (frontEnd == "skills") {										
+			$('.skills-Container').hide(); 
+			$('.wardrobes-Container').show();
+			storeData("FrontEnd", "wardrobes");
+  			}
+		frontEnd = storeData("FrontEnd"); 
+		})
+	// buttons in the skill-FrontEnd
+	$('.add').click(function () {
+		if ($(this).prev().val() < 20) {
+    		$(this).prev().val(+$(this).prev().val() + 1);
+		}
+		
+		
+		})
+	$('.sub').click(function () {
+		if ($(this).next().val() > 1) {
+    		if ($(this).next().val() > 1) $(this).next().val(+$(this).next().val() - 1);
+		}
+		})
+	$('#castSkill1').click(function () {
+		storeData('skill1', JSON.stringify(document.querySelector('#amount1').value));
+		amountOfSkill = getAmountOfSkill("field1"); 
+		prepareTriple(amountOfSkill,
+				  skills[user.stats.class].field1.API, 
+				  skills[user.stats.class].field1.name,
+				  skills[user.stats.class].field1.cost,
+				  skills[user.stats.class].field1.wardrobe,
+				  skills[user.stats.class].field1.nameOfWardrobe, 
+				  'field1');	
+		})		
+	$('#castSkill2').click(function () {
+		storeData('skill2', JSON.stringify(document.querySelector('#amount2').value));
+		amountOfSkill = getAmountOfSkill('field2'); 
+		prepareTriple(amountOfSkill,
+				  skills[user.stats.class].field2.API, 
+				  skills[user.stats.class].field2.name,
+				  skills[user.stats.class].field2.cost,
+				  skills[user.stats.class].field2.wardrobe,
+				  skills[user.stats.class].field2.nameOfWardrobe, 
+				  'field2');	
+		})
+	$('#castSkill3').click(function () {
+		storeData('skill3', JSON.stringify(document.querySelector('#amount3').value));
+		amountOfSkill = getAmountOfSkill('field3'); 
+		prepareTriple(amountOfSkill,
+				  skills[user.stats.class].field3.API, 
+				  skills[user.stats.class].field3.name,
+				  skills[user.stats.class].field3.cost,
+				  skills[user.stats.class].field3.wardrobe,
+				  skills[user.stats.class].field3.nameOfWardrobe, 
+				  'field3');	
+		})
+	$('#castSkill4').click(function () {
+		storeData('skill4', JSON.stringify(document.querySelector('#amount4').value));
+		amountOfSkill = getAmountOfSkill('field4'); 
+		prepareTriple(amountOfSkill,
+				  skills[user.stats.class].field4.API, 
+				  skills[user.stats.class].field4.name,
+				  skills[user.stats.class].field4.cost,
+				  skills[user.stats.class].field4.wardrobe,
+				  skills[user.stats.class].field4.nameOfWardrobe, 
+				  'field4');	
+		})
+	$('#rememberGear').click(function(){	
+		rememberGear = JSON.stringify($('#rememberGear').is(":checked")); 
+		storeData("Remember Gear", rememberGear);
+		})
+		
 
 
     //////////////////////////////////////////////////////////////////////
@@ -1111,9 +1766,11 @@ function picsToFlexbox(copyGear) {
 	$('#documentationAndForm').html(' ');
     $('#modal').hide();
     $('#output').html(htmlStart + html + htmlEnd);
-
+	prepareSkillAmounts();
+	
 } // End of parseData() and its nested functions
 }); // end of global Function
+
 </script>
 <style>
 
@@ -1181,7 +1838,7 @@ div.scroll {
     clear: both;
 }
 
-.flex-container {
+.wardrobes-Container {
   display: flex;
   flex-wrap: wrap;
   background-color: #dddddd;
@@ -1190,7 +1847,7 @@ div.scroll {
 
 }
 
-.flex-container>div {
+.wardrobes-Container>div {
   background-color: #eeeeee;
   border-radius: 8px;
   width:280px;
@@ -1201,6 +1858,28 @@ div.scroll {
   line-height: 13px;
   font-size: 12px;
 }
+
+.skills-Container {
+  display: flex;
+  flex-wrap: wrap;
+  background-color: #dddddd;
+  line-height: 250px;
+  border-radius: 8px;
+
+}
+
+.skills-Container>div {
+  background-color: #eeeeee;
+  border-radius: 8px;
+  width:280px;
+  margin: 10px;
+  border: 10px;
+  text-align: center;
+
+  line-height: 13px;
+  font-size: 12px;
+}
+
 .flex-displayContent {
 	background-color: #eeeeee;
 	display: flex;
@@ -1352,7 +2031,7 @@ div.scroll {
   position: absolute;
   bottom: 5px;
   left: 1px;
-  font-weight: bold;
+  font-weight: normal;
   color: #333333;
   visibility: invisible;
   opacity: 0;
@@ -1367,10 +2046,9 @@ div.scroll {
   border-radius: 8px;
   position: absolute;
   top: 5px;
-
   left: 90px;
   right: 50px;
-  font-weight: bold;
+  font-weight: normal;
   color: #333333;
   visibility: invisible;
   opacity: 0;
@@ -1381,7 +2059,22 @@ div.scroll {
   width: 150px;
   z-index: 2;
 }
-
+.descriptionSkills {
+  border-radius: 8px;
+  position: absolute;
+  bottom: 30px;
+  left: -8px;
+  font-weight: normal;
+  color: #333333;
+  visibility: invisible;
+  opacity: 0;
+  background-color: #fefefe;
+  margin: auto;
+  padding: 0px;
+  border: 1px solid #888888;
+  width: 280px;
+  z-index: 2;
+}
 
 .wrap:hover .description {
   visibility: visible;
@@ -1391,6 +2084,93 @@ div.scroll {
 .wrap:hover .descriptionStats {
   visibility: visible;
   opacity: 1;
+}
+
+.wrap:hover .descriptionSkills {
+  visibility: visible;
+  opacity: 1;
+}
+
+/*******************
+Toggle Wardrobes/Skills
+********************/
+
+#wardrobes-Container {
+  width: 100%;
+  padding: 50px 0;
+  text-align: center;
+  background-color: lightblue;
+  margin-top: 20px;
+  display: block; 
+}
+#skill-Container {
+  width: 100%;
+  padding: 50px 0;
+  text-align: center;
+  background-color: blue;
+  margin-top: 20px;
+  display: none;
+  }
+
+
+/***********************************
+quantity buttons
+***************/
+.number {
+	width: 20px; 
+}
+
+.value-button {
+  display: inline-block;
+  border: 1px solid #ddd;
+  margin: 0px;
+  width: 40px;
+  height: 20px;
+  text-align: center;
+  vertical-align: middle;
+  padding: 11px 0;
+  background: #eee;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.value-button:hover {
+  cursor: pointer;
+}
+
+form #decrease {
+  margin-right: -4px;
+  border-radius: 8px 0 0 8px;
+}
+
+form #increase {
+  margin-left: -4px;
+  border-radius: 0 8px 8px 0;
+}
+
+form #input-wrap {
+  margin: 0px;
+  padding: 0px;
+}
+
+input#number {
+  text-align: center;
+  border: none;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  margin: 0px;
+  width: 40px;
+  height: 40px;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 /*********************************
@@ -1431,11 +2211,11 @@ Mana bars
 .modal {
     display: none; /* Hidden by default */
     position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
+    z-index: 4; /* Sit on top */
     padding-top: 100px; /* Location of the box */
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
+	width: 100%; /* Full width */
     height: 100%; /* Full height */
     overflow: auto; /* Enable scroll if needed */
     background-color: rgb(0,0,0); /* Fallback color */
@@ -1444,6 +2224,10 @@ Mana bars
 
 /* Modal Content */
 .modal-content {
+	position: absolute; 
+	left: 50%;
+	top: 32%;
+	transform: translate(-50%, -50%);
 	border-radius: 8px;
     background-color: #fefefe;
     margin: auto;
@@ -1451,9 +2235,61 @@ Mana bars
     border: 1px solid #888;
     width: 300px;
 	font-weight: bold;
+	text-align: center; 
 }
 
 
+/* The Modal (background) */
+.modalData {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 3; /* Sit on top, even on top of Tooltips*/
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+	width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modalData-content {
+	position: fixed;
+    bottom: 10%;
+    right: 10%;
+    width: 80%;
+    height: 80%;
+	overflow: scroll; 
+	border-radius: 8px;
+    background-color: #fefefe;
+    border: 2px solid #eeeeee;
+	z-index: 4; 
+}
+
+
+
+
+/* The Close Button */
+.close {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.fixedTop {
+	position: fixed;
+	overflow: none; 
+}
 
 /*********************************************************************
 ****   Header   ******************************************************
@@ -1477,25 +2313,130 @@ h1 span {
     font-size: 0.5em;
 }
 
+
+
+
+/************************************************
+***** top navigation ****************************
+************************************************/
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.navbar {
+  overflow: hidden;
+  background-color: #eeeeee;
+}
+
+.navbar a {
+  float: left;
+  font-size: 16px;
+  color: 662266;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+.navbar b {
+  float: left;
+  font-size: 16px;
+  color: #662266;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;	
+}
+
+
+
+.dropdown {
+  float: left;
+  overflow: hidden;
+}
+
+.dropdown .dropbtn {
+  font-size: 16px;  
+  border: none;
+  outline: none;
+  color: #662266;
+  padding: 14px 16px;
+  background-color: inherit;
+  font-family: inherit;
+  margin: 0;
+}
+
+.navbar a:hover, .dropdown:hover .dropbtn {
+  background-color: #662266;
+  color: white; 
+}
+
+
+.topnav-right {
+  float: right;
+}
+
+.small {
+	font-size: 8px;
+	margin: 1px; 
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 3;
+}
+
+.dropdown-content a {
+  float: none;
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+
+.dropdown-content a:hover {
+  background-color: #ddd;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
 </style>
 
 </head>
 
 
 <body>
-<!-- infoModal -->
+<!-- Modal -->
 <div id="modal" class="modal">
-  <!-- Modal content -->
-  <div id="modalContent" class="modal-content">
-    <p>Weapon_rouge_2 equipped</p>
-  </div>
+  	<!-- Modal content -->
+  	<div id="modalContent" class="modal-content"></div>
+</div>	
+<div id="modalData" class="modalData">	
+	<div id="modalDataContent" class="modalData-content"></div>
 </div>
-<!-- end infoModal -->
+<div id="modalSettings" class="modalData">	
+	<div id="modalSettingsContent" class="modalData-content">
+		<a>Settings: 
+			<span class="close">&times;</span>
+		</a>
+		<a> Hard mode:<input id="hardMode" type="checkbox" autocomplete="off"></a>
+		
+	</div>
+</div>
+
+
+<!-- end Modal -->
 
 <div id="innerBody">
 
-<h1>Habitican Wardrobes
-	<span>(v 1.3 Feb. 2019)</span></h1>
+<h1>Habitican Wardrobes<br>
+	<span>(v 2.0 July 2019)</span></h1>
 <div id="headerExtras"></div>
 <hr class="clear" />
 <div id="loading">
@@ -1528,51 +2469,95 @@ h1 span {
             (from <a href="https://habitica.com/user/settings/api" target="_blank"> User Icon &gt; Settings &gt; API</a>)
             </legend>
             <label for="userId"><span>User ID</span>
-                <input type="text" name="userId" id="userId"  > <!-- Value entfernen -->
+                <input type="text" name="userId" id="userId" value=""> <!-- Value entfernen -->
             </label>
             <label for="apiToken"><span>API Token</span>
-                <input type="password" name="apiToken" id="apiToken" "> <!-- Value entfernen -->
+                <input type="password" name="apiToken" id="apiToken" value=""> <!-- Value entfernen -->
             </label>
 
             <input type="submit" value="Fetch My Data" />
-			<p class="highlight">Datenschutzerklärung:</p>
-			<ul>
-			Die Nutzung dieser Webseite erfolgt unter Angabe Ihrer User-ID und Ihres API-Tokens der website habitica.com. <br> 
-			abbhh.de/wardrobes.html speichert Ihre Eingaben nicht. Ihre Eingaben dienen nur dem Zweck, auf den von Ihnen eingerichteten Account bei Habitica zuzugreifen. <br>
-			Der Hoster dieser Webseite speichert Server-Logs anonymisiert für 3 Monate zu statistischen Zwecken. Nach Ablauf der drei Monate werden die Daten gelöscht. 
-			In den ServerLogs werden Ihre IP-Adresse, Ihr verwendeter Browser, die Refferer-URL gespeichert. <br>  
-			Für allgemeine Risiken des Internetverkehrs wird keine Haftung übernommen. Angreifern kann es möglich sein, Ihre Eingaben abzufangen und so Rückschlüsse auf den bei Habitica 
-			hinterlegten Inhalt zu erlagen, incl. der von Ihnen dort verwendeten email-Adresse. 
-			</ul>
-            <p class="highlight">Privacy and security notes:</p>
-            <ul>
-			For using this website you need to input your User-ID and API-token. You received those from www.habitica.com as login-legitimations from Habitica. <br>
-			This website does not safe your input. Your input only serve the purpose to access your habitica account. <br>
-			The hoster of this website saves anoymised sever-logs for 3 months for statistical matters. After three months data is deleted. 
-			The server-logs save your ip-adress, your browser, refferer-url. 
-			For general risks of internet traffic liability is excluded. Attacers could be able to gather your input and draw conclusions to your data, thats saved in Habitica, your email adress included. 
-			  
-            <li>Your API Token is a password - do not share it with anyone, not even the maintainer of this page if you are seeking help.</li>
-            <li>This page does not save your User ID and API Token to any location, but your browser might, if it has been configured to
+			<p style="font-size: 8px;">
+			Datenschutzerklärung und Impressum:
+			<br>
+			Verantwortlicher: ABB Allgemeine Buchhaltungshilfe- und Betriebsberatungsges. mbH, Hammer Deich 70, 20537 Hamburg<br>
+			<br>
+			Personenbezogene Daten: Die Angaben zu User-ID und API-Token (habitica.com) werden nicht durch abbhh.de gespeichert und dienen ausschließlich 
+			dem Zugriff auf habitica.com. abbhh.de speichert Serverlogfiles (IP-Adresse, verwendeter Browser, Referer-Url). Die Erhebung der Daten dient dem Betrieb der 
+			Website. Die Daten werden nicht ausgewertet und nach 30 	Tagen gelöscht. abbhh.de/wardrobes.html wird auf Ihrem Browser ausgeführt und speichet dort vom Benutzer 
+			ausgewählte Einstellungen im LocalStorage oder alternativ als Cookie auf Ihrem Gerät. Diese Datenspeicherung erfolgt ausschließlich für die Komfortoptimierung der Benutzer.<br>
+			<br>
+			Widerspruch gegen die Datenverarbeitung und Zustimmung zur Datenverarbeitung.  						
+			Durch Eingabe Ihrer Nutzerdaten User-ID und API-Token akzeptieren Sie die Erhebung o.g. Daten. Der Datenerhebung widersprechen Sie durch Verzicht auf die Nutzung 
+			dieser Website. 
+			<br><br>
+            Privacy and security notes:
+            <br>
+			Personal Data / Contact: <br>
+			Responsible Person: ABB Allgemeine Buchhaltungshilfe- und Betriebsberatungsges. mbH, Hammer Deich 70, 20537 Hamburg / Germany
+			<br><br>
+			Personal data: The information on user ID and API tokens (habitica.com) are not stored abbhh.de and are used exclusively
+			accessing habitica.com. abbhh.de stores server log files (IP address, browser used, referer url). The collection of data serves the operation of
+			Website. The data will not be evaluated and will be deleted after 30 days. abbhh.de/wardrobes.html is executed on your browser and stores the user
+			selected settings in the LocalStorage or alternatively as a cookie on your device. This data storage is exclusively done for the comfort of the users. 
+			<br>
+			Opposition to data processing and consent to data processing.
+			By entering your user data User-ID and API-Token you accept the survey of the data mentioned above. Contradict the data collection by waiving the use
+			this website.
+			<br><br>General<br>			  
+            Your API Token is a password - do not share it with anyone, not even the maintainer of this page if you are seeking help.<br>
+            This page does not save your User ID and API Token to any location, but your browser might, if it has been configured to
             save form and password information. If you are using this page on a shared computer, you should clear any data that the browser
-            has saved.</li>
-            <li>This page will make changes to your Habitica accout. It changes equipped gear. If anything goes wrong, you will probably be
-			be able to change everything back using the official access paths (webpage, app).</li>
-            <li>Changes to the Habitica user data made on this webpage will take effect immediately on the official webpage or on the app. Visibility of changes 
-			occur after a sync there. </li>
-			<li>This page is not Habitica code. It's third party. Autor is @Piti (user of Habitica and member of the guild 'Aspiring Comrades' and 'Habitican Wardrobes').</li>
-            </ul>
+            has saved.
+            <br>This page will make changes to your Habitica accout. It changes equipped gear. If anything goes wrong, you will probably be
+			be able to change everything back using the official access paths (webpage, app).
+            <br>Changes to the Habitica user data made on this webpage will take effect immediately on the official webpage or on the app. Visibility of changes 
+			occur after a sync there. 
+			<br>This page is not Habitica code. It's third party. Autor is @Piti (user of Habitica and member of the guild 'Aspiring Comrades' and 'Habitican Wardrobes').</li>
+			</p>
         </fieldset>
     </form>
 </div><!-- end of div id="documentationAndForm" -->
 
-<div class="flex-displayContent">
-  <fieldset><div id="displayContent"><legend><h3>This page is about battle gear for citizens of Habitica:</h3></legend>
-  <br>
-   Habitican Wardrobes offers six wardrobes out of which a Habitican can choose to reach their goals faster. <br>
+<div id="modalVersion" class="modalData">	
+	<div id="modalVersionContent" class="modalData-content">
+	<span class="close">&times;</span>
+   Verions Info: <br><br>
+   Version 2.0<br>
+   <li>You can now toggle the display between Wardrobes and Skills. </li>
+   <li>The new Skills-section allows you to cast any of your four skills with an adjustable number of repititions.</li>
+   <li>Values (repititions, Hard-Mode, selcted FrontEnd) are stored either in your browsers Local-Storage or in a local cookie if there is no Local-Storage 
+   (if you use Edge as browser e.g.). All values will still be present after a page reload or a complete browser restart. Check any search-engine on how to 
+   clean local Storage to delete entries by hand. </li>
+   <li>Amount of repitition will automatically be reduced if Mana-level is too low.</li>
+   <li>Skills cannot be cast if your level is too low for the specific skill. </li>
+   <li>The website uses the best suitable wardrobe for your chosen skill and returns to wardrobe Intelligence when all skills are completed. <br>
+   Plans are to let you specify a wardrobe to return to. </li>
+   <li>Skills that are cast on tasks will be cast on your bluest task (highest positive value). <br>
+   Warriors who might want to make a red tast more blue, will unfortunately have to wait for a future version where they can choose an individual target.<br>
+   It is not possible to cast skills on tasks from challenges. </li>
+   <li>Some buttons were relocated to a new navigation bar on the top of the page for easier access and better looks. </li>
+   <li>Display of information about gear, user-data, Habitica-content, tasks, etc. now uses modals for an optimized field of view. </li>
+   <li>The API section needed major adjustments and was redsigned completely. <br>
+   The use of deferred promises could no longer be maintained and had to be replaced by async await functions in order to sequentially go through the chain of ajax-calls. </li>
+   <li>xhr-headers for server-requests now contain the name of the tool and the authors user-id.</li>
+   <li>There are wait-functions between API-Server-Calls to minimize server-load. <br>
+   The more skills are cast, the longer the waiting time between calls will be. The formula is (1000+(1000 * amount / (0.01 * amount + 20))) in milli-seconds. So code 
+   waits 1.5 sec each on 10 casts, 3.5 sec each on 50 casts and 11 sec each on 200 casts. </li> 
+   <li>Adjustments of some z-index</li>
+   <li>Adjustments of disclaimer for legal compatibility with local law in conjunction with data-processing</li><br>
+   <br> 
+   
+   Version 1.4<br>
+   Hard Mode - button added. Default value is disabled - showing gear with compromise in some cases. <br>
+   Activating Hard Mode will provide best gear at any cost. <br><br>
+   Version 1.3.5<br>
+   Tooltips added for Skills in order to give more precise information. <br>
+   Refresh-button moved to top of the page for accessability. <br>
+   Counters added to "lodading" and "equipping" modals. <br>
    <br>
    Version 1.3<br>
    Class-specific Impacts of skills were added for all classes.<br>
+   This version allows for entry level players<br>
    Bug-fixes: <br>
    Empty inventory sports are no longer shown. <br>
    In case multiple wardrobes contain the same inventory, all those wardrobes are displayed with a boarder. <br>
@@ -1584,20 +2569,11 @@ h1 span {
    Two-handed weapons were implemented.  <br>
    code was overhauled. <br>
    <br>
-   Whats to come...:<br>
-   <br>
-   tooltips are out of focus on the equipment items.<br>
-   graphical information for each slot in each wardrobe, so each slot has its unique location everytime<br>
-   Accessory is too strict in wardrobes blessing and constitution . <br>
-   Border to indicate which wardrobe is equipped, may show on differen wardrobe if gear in the non-chosen wardrobe is equal to the chosen one. <br>
-   Heavy-Metal button<br>
-   Info on how many attribute points can be added/subtracted without influence on the skills effect. <br>
-   
    <br>
    old Version 1.1<br>
   Fixed bug:  Items that were lost due to death were suggested in the wardrobe, and couldn't be equipped. 
    
-   </div></fieldset>
+   </div>
   
 
 
