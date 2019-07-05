@@ -1346,7 +1346,7 @@ function getAmountOfSkill(field) {
 			if (amountOfSkill > 0) {storeData("skill1", parseInt(document.querySelector("#amount1").value));} // use parseInt to avoid paratheses in localStorage!
 			if (Math.floor(user.stats.mp / skills[user.stats.class].field1.cost) <= amountOfSkill) {
 					amountOfSkill = Math.floor((user.stats.mp) / (skills[user.stats.class].field1.cost));
-					if (amountOfSkill = "NaN") {
+					if (amountOfSkill == "NaN") {
 						amountOfSkill = 0;  
 						}
 			//document.querySelector("#amount1").value = amountOfSkill;
@@ -1359,7 +1359,7 @@ function getAmountOfSkill(field) {
 			if (amountOfSkill > 0) {storeData('skill2', parseInt(document.querySelector("#amount2").value));} // use parseInt to avoid paratheses in localStorage!
 			if (Math.floor((user.stats.mp / skills[user.stats.class].field2.cost))	 < amountOfSkill) {
 					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field2.cost);
-					if (amountOfSkill = "NaN") {
+					if (amountOfSkill == "NaN") {
 						amountOfSkill = 0;  
 					}
 			console.log(amountOfSkill);
@@ -1372,7 +1372,7 @@ function getAmountOfSkill(field) {
 			if (amountOfSkill > 0) {storeData("skill3", parseInt(document.querySelector("#amount3").value));} // use parseInt to avoid paratheses in localStorage!
 			if (Math.floor((user.stats.mp / skills[user.stats.class].field3.cost))	 < amountOfSkill) {
 					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field3.cost);
-					if (amountOfSkill = "NaN") {
+					if (amountOfSkill == "NaN") {
 					amountOfSkill = 0;  
 					}
 			console.log(amountOfSkill);
@@ -1387,7 +1387,7 @@ function getAmountOfSkill(field) {
 			if (amountOfSkill > 0) {storeData("skill4", parseInt(document.querySelector("#amount4").value));} // use parseInt to avoid paratheses in localStorage!
 			if (Math.floor((user.stats.mp / skills[user.stats.class].field4.cost))	 < amountOfSkill) {
 					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field4.cost);
-					if (amountOfSkill = "NaN") {
+					if (amountOfSkill == "NaN") {
 					amountOfSkill = 0;  
 					}
 			console.log(amountOfSkill);
