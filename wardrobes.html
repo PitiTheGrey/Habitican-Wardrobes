@@ -24,7 +24,7 @@ var serverUrl = 'https://habitica.com:443/api/v3';
 var userID     = '';
 var apiToken   = '';
 var url = '';
-var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"}; // Nameless Helm, Jean Chalard's Noble Tunic, Stephen Weber's Shaft of the Dragon, Mustaine's Milestonemashing Morningstar
+var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"}; 
 var blessing = {};
 var intelligence = {};
 var perception = {};
@@ -40,10 +40,13 @@ var frontEnd = "skills"; // for toggling between "wardrobes" and "skills" / late
 var cronHelperWardrobeForTasks = 'disabled';
 var cronHelperWardrobeForCron = 'disabled';
 var wardrobeEquipped = ['Initial'];
+var wardrobeEquippedObject = {"head":"", "armor":"", "weapon":"", "shield":"", "back":"", "body":"", "eyewear":"", "headAccessory":""}; // e.g. {"head":"head_special_2", ...} for use of intelligence, perception ...
+var avatar = ''; 
 var userName = '';
 var equipCount = 0;
 var equipCountSkip = 0;
 var nameOfWardrobe = 'perception'; 
+
 var skills = {"rogue": {
 				"field1": {
 					"name": "Tools of the Trade", 
@@ -414,12 +417,12 @@ function storageFirstLoad() {
 			}
 		
 		rememberGear = storeData("Remember Gear"); 
-			if (rememberGear == "true") {$("#rememberGear").prop('checked', true);}
-			if (rememberGear == null) {
-				rememberGear = "true"; 
-				storeData("Remember Gear", "true"); 
-				$('#rememberGear').prop('checked', true);  
+			if (rememberGear != "false") 
+				{$('#rememberGear').prop('checked', true); rememberGear = "true";} 
+			else {
+				{$('#rememberGear').prop('checked', false); rememberGear = "false";}
 			}
+			storeData("Remember Gear", rememberGear); 		
 			
 		threshold = parseInt(storeData('Hard Mode')); // typeop(threshold) = number 
 		if (threshold <= 9 && threshold >= 1) {
@@ -664,7 +667,7 @@ function storageFirstLoad() {
 									key[item][alternativeAttribute] >= key[wardrobe[element]][alternativeAttribute]) { // better alternative than wardrobes alternative
 																		
 											wardrobe[element] = item;
-							 				console.log('Alternative Equipment: ' + key[item].key);
+							 				//console.log('Alternative Equipment: ' + key[item].key);
 								}
 							} // end funciton furtherChecking
 							
@@ -723,14 +726,16 @@ function getEquippedWardrobes() {
         if (wardrobeEquipped.length > 1) {wardrobeEquipped = wardrobeEquipped.filter(function(item){return item !== 'Initial'}); }; // get rid of 'Initial' in case any other wardrobe matches
  		addBorderToSelectedWardrobe();	
 		
-        function compareGear(specificWardrobe){ //checks if the currently equipped gear is equal to one of the wardrobes
-               var equipped = true
-               for (var gear in specificWardrobe){
-                       if (specificWardrobe[gear] != user.items.gear.equipped[gear]) {
-                               equipped = false; 
-                       } // end if    
-               } // end for gear in specificWardrobe
-               return equipped; 
+        function compareGear(wardrobeToCompare){ //checks if the currently equipped gear is equal to one of the wardrobes
+			var equipped = true;
+			["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element) {
+				if (wardrobeToCompare[element] == user.items.gear.equipped[element]) {
+					wardrobeEquippedObject[element] = wardrobeToCompare[element];
+				} else {
+					equipped = false; 
+				}// end if    
+			}) // end forEach
+			return equipped;   
         }; // end of function compareGear
 } // end of getEquippedWardrobes 
 		
@@ -1063,12 +1068,13 @@ htmlStats += 	'<br><br>'+
     			'<button type="button" id="add4" class="add">+</button>'+
 				'<br>'+
 				'</div>';
-	
-	htmlStats += '<div>Return to Wardrobe Intelligence: '+
-				'<input type="checkbox" id="rememberGear" />'+
-				'<div class="avatar"></div>' +
+	 			
+	htmlStats += '<div>Return to Wardrobe Intelligence: ';
+				rememberGear == "true" ? htmlStats += '<input type="checkbox" id="rememberGear" checked="checked"/>' : htmlStats += '<input type="checkbox" id="rememberGear" />';  
+				htmlStats += '<div class="avatar"></div>' +
 				// display Avatar later because getMaxGear() has not jet finished!
 				'</div>';
+				 
 	htmlStats += '</div>'; //end div skills-Container 
 	
 	
@@ -1079,11 +1085,15 @@ htmlStats += 	'<br><br>'+
 	function picsToFlexbox(copyGear) {
 		htmlStats +='<br>'; 
 		["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element){
-			if (element in copyGear === true && typeof copyGear[element] != 'undefined') {
+			//if (element in copyGear === true && typeof copyGear[element] != 'undefined') { 
+			if (copyGear[element] != 'undefined' && copyGear[element] != '' && !copyGear[element].includes('base_0')) {
 				htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' + 
   					'<p class="description">' + content.gear.flat[copyGear[element]].text +
 					'<br>INT: ' + content.gear.flat[copyGear[element]].int + ' PER: ' + content.gear.flat[copyGear[element]].per +
 					'<br>STR: ' + content.gear.flat[copyGear[element]].str + ' CON: ' + content.gear.flat[copyGear[element]].con + '</p>' ;
+			} else {
+				console.log("no gear: " + element); 
+				htmlStats += '<a class="wrap" style="width: 68px; height: 68px; opacity: 0;"><img src="https://abbhh.de/Images/68x68.png"</a>'; 
 			} // end if copyGear[gear]		
 		}) // end for each	
 	
@@ -1121,17 +1131,14 @@ htmlStats += 	'<br><br>'+
 	);
 	
 	frontEnd = storeData("FrontEnd");
-	console.log(frontEnd);
 	
 	//evaluateTasks();
 	getMaxGear(); 
 	
 	htmlStats += '<div class="wardrobes-Container">'; 
-	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var
-	//legendary.headAccessory = copyGear.headAccessory; // Accessory in legendary is deriven from effective equipment
-	//legendary.back = copyGear.back;
-	//legendary.body = copyGear.body;
-	//legendary.eyewear = copyGear.eyewear;
+	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var 
+	
+	
 	//start flexbox 1
 	// initialGear: 
 	htmlStats += '<div id="Initial" style="background-color: #cccccc"><h3>Equipped Gear:</h3>'; 
@@ -1139,22 +1146,17 @@ htmlStats += 	'<br><br>'+
 	calculateAttributes(copyGear); // continue with content of flexbox 1 there
 	htmlStats +='<br>'; 
 		["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element){
-			if (element in copyGear === true && typeof copyGear[element] != 'undefined') {
+			if (copyGear[element] != 'undefined' && copyGear[element] != '' && !copyGear[element].includes('base_0')) {
+				console.log("initial: " + copyGear[element]); 
 				htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' + 
   					'<p class="description">' + content.gear.flat[copyGear[element]].text +
 					'<br>INT: ' + content.gear.flat[copyGear[element]].int + ' PER: ' + content.gear.flat[copyGear[element]].per +
 					'<br>STR: ' + content.gear.flat[copyGear[element]].str + ' CON: ' + content.gear.flat[copyGear[element]].con + '</p>' ;
+			} else {
+				console.log("no gear: " + element); 
+				htmlStats += '<a class="wrap" style="width: 68px; height: 68px; opacity: 0;"><img src="https://abbhh.de/Images/68x68.png"</a>'; 
 			} // end if copyGear[gear]		
 		}) // end for each		
-		/*for (var i in ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]) { 
-       	 	var gear = ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"][i];
-			if (gear in copyGear === true) {	
-					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[gear] + '.png">' + 
-  					'<p class="description">' + content.gear.flat[copyGear[gear]].text +
-					'<br>INT: ' + content.gear.flat[copyGear[gear]].int + ' PER: ' + content.gear.flat[copyGear[gear]].per +
-					'<br>STR: ' + content.gear.flat[copyGear[gear]].str + ' CON: ' + content.gear.flat[copyGear[gear]].con + '</p>' ;
-					} // end if copyGear[gear]
-			} // end for var i in gearLocation*/
 	htmlStats +='</a></div>'; // end single box (flexbox 2, 3, ...6)
 	// start Flexbox 2
 	// INTELLIGENCE
@@ -1250,30 +1252,27 @@ htmlStats += 	'<br><br>'+
 	addBorderToSelectedWardrobe();
 	
 	
-	// now add Avatar:
-	var avatar; 
-	avatar= '' +
-				'<div style="margin: 0px auto 0px 24px; width: 90px; height: 90px;">'+
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/skin_' + user.preferences.skin + '.png" style="position: absolute;">'+
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_bangs_' + user.preferences.hair.bangs + '_' + user.preferences.hair.color + '.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_mustache_' + user.preferences.hair.mustache + '_' + user.preferences.hair.color +'.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_beard_' + user.preferences.hair.beard + '_' + user.preferences.hair.color + '.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + copyGear.eyewear + '.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + copyGear.headAccessory + '.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + copyGear.back +'.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + copyGear.body +'.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + copyGear.weapon +'.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + copyGear.armor +'.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + copyGear.head +'.png" style="position: absolute;">' +
-				'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + copyGear.shield +'.png" style="position: absolute;">' +
-				'</div>';
-	$('.avatar').html(avatar);			
-	
-	
 //	} // end function drawFlexboxes; 
+
+function addAvatar(wardrobe) {
+	avatar= '' +
+	'<div style="margin: 0px auto 0px 24px; width: 90px; height: 90px;">'+
+	'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/skin_' + user.preferences.skin + '.png" style="position: absolute;">';
+	["eyewear", "headAccessory", "back", "body", "weapon", "armor", "head", "shield"].forEach (function(element) {
+		if (wardrobeEquippedObject[element] != 'undefined' && wardrobeEquippedObject[element] != '' && !wardrobeEquippedObject[element].includes('base_0')){
+			if (element != "armor") {
+				avatar += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + wardrobe[element] + '.png" style="position: absolute;">'
+			} else {
+				avatar += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/broad_' + wardrobe[element] + '.png" style="position: absolute;">'
+			}
+		}
+	})
+	avatar += '</div>';
+	$('.avatar').html(avatar);			
+}
+
 function addBorderToSelectedWardrobe() {
-	
-	//this is triggerd 2x. 1- immediately, 2- after all Ajax-calls are done. 
+
 	// display of data in last Flexbox
 	$("#percept").hide();
 	$("#constit").hide();
@@ -1300,6 +1299,7 @@ function addBorderToSelectedWardrobe() {
 	if (wardrobeEquipped.includes('strength')) {$('#strengt').show();$("#Strength").css({"border": "solid", "border-color": "#4f2a93"});}
 	if (wardrobeEquipped.includes('blessing')) {$('#blessin').show();$("#Blessing").css({"border": "solid", "border-color": "#4f2a93"});}
 	if (wardrobeEquipped.includes('legendary')) {$('#legenda').show();$("#Legendary").css({"border": "solid", "border-color": "#4f2a93"});}
+	addAvatar(wardrobeEquippedObject); 
 }; // end of function addBorderToSelectedWardrobe
 function prepareSkillAmounts () {
 	var skillAmount = [];
@@ -1382,27 +1382,7 @@ function getAmountOfSkill(field) {
 //////////////////////////////////////////////////////////////////////
 		
 // https://petetasker.com/using-async-await-jquerys-ajax/
-async function loadAvatar(url) {
-		var url = 'https://habitica.com/export/avatar-' + userID + '.html'
-		console.log(url);
-		let result;  
-		try {
-			result = await $.ajax({	
-					url: 'https://habitica.com/export/avatar-' + userID + '.html',
-					type: 'GET',
-					//dataType: 'json',
-					cache: false,
-					beforeSend: function(xhr){
-						xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
-						//xhr.setRequestHeader('x-api-user', userID);
-						//xhr.setRequestHeader('x-api-key',  apiToken);
-					},
-					success: function(result){return result;}
-			});
-		} catch (error) {
-			console.log(error.responseText);
-		}						
-}; // end ajax
+
 async function doAjax(url){
 		let result;  
 		try {
@@ -1452,7 +1432,7 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 		
 		$('#modalContent').html('Equipping...');
 		$('#modal').show();
-		for (var i in ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]) { //gearLocation = [head, armor, ... eyewear], i = 1..8
+		for (var i in ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]) { 
 			itemToEquip = wardrobe[["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"][i]];  // fromat gear: head_base_0 e.g.
 			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
 			typeOfItem = content.gear.flat[itemToEquip].type; //eg displays: head (good)
@@ -1467,9 +1447,11 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 					} // end if equipCountSkip
 			} else {	
 				url = 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip;
-				$('#modalContent').html('Equipping wardrobe ' + nameOfWardrobe + '<br>' + (equipCountSkip + equipCount) + '/8');
+				$('#modalContent').html('Equipping wardrobe ' + nameOfWardrobe + '<br>' + (equipCountSkip + equipCount) + '/8<br>' + avatar);
 				await doAjax(url);	 
 				user.items.gear.equipped[typeOfItem] = itemToEquip;
+				wardrobeEquippedObject[typeOfItem] = itemToEquip;
+				addAvatar(wardrobeEquippedObject); 
 				equipCount++; 
 				await wait(50); 		
 			} // end else
@@ -1477,12 +1459,7 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 		await wait(500);
 		$('#modal').hide();
 		getEquippedWardrobes();
-} // end function callWardrobe
-  
-  
-async function waitForAlert() {
-	alert("waiting... please check if everything is as expected!");
-}  
+} // end function callWardrobe 
  
 async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, field){ // amountOfSkill, API, "eg. Tools of the Trade, 25, perception, Object
 	if (wardrobeEquipped.includes(nameOfWardrobe)) {
@@ -1501,7 +1478,6 @@ async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, fi
 					skills[user.stats.class][field].nameOfWardrobe, 
 					field);
 			getEquippedWardrobes();
-			console.log(wardrobeEquipped, rememberGear);
 			if (wardrobeEquipped.includes('intelligence')) {
 					console.log(nameOfWardrobe + 'already equipped');
 			} else {
@@ -2200,18 +2176,15 @@ async function callForceCron() {
 		threshold = $('#threshold').prop('value'); // value comes as a string form <option>
 		storeData('Hard Mode', threshold); // ... needs to be stored as a string
 		threshold = parseInt(threshold); // ... but needs to be number for the following code
-		//parseData();
 		}); 
 		$('#alternativeAttribute').on('change', function(){
 		alternativeAttribute = $('#alternativeAttribute').prop('value'); // value comes as a string form <option>
 		storeData('Alt. Attribute', alternativeAttribute); // ... needs to be stored as a string
-		//parseData();
 		}); 
 	$('#forceAetherAmuletAndComicalArrow').click(function(){
 		forceAetherAmuletAndComicalArrow = JSON.stringify($('#forceAetherAmuletAndComicalArrow').is(':checked'));
 		storeData('Amulet and Arrow', forceAetherAmuletAndComicalArrow);
 		console.log(forceAetherAmuletAndComicalArrow);
-		//parseData();
 		})	
 	$('#cronHelperWardrobeForTasks').on('change', function() {
 		cronHelperWardrobeForTasks = $('#cronHelperWardrobeForTasks').prop('value');
@@ -2223,8 +2196,8 @@ async function callForceCron() {
 		storeData('Cron', cronHelperWardrobeForCron);
 	})	
 	$('#rememberGear').click(function(){	
-		rememberGear = JSON.stringify($('#rememberGear').is(":checked")); 
-		storeData("Remember Gear", rememberGear);
+		rememberGear = JSON.stringify($('#rememberGear').is(':checked')); 
+		storeData("Remember Gear", rememberGear); 
 		console.log(rememberGear);
 		})
 	
@@ -2999,7 +2972,7 @@ td, th {
 				<div class="dataSectionFix">
 					<h3>Version Info:</h3><br><br>
 			    	<ol style="list-style-position: outside;"> 
-					<h4>Version 2.1</h4><br>
+					<h4>Version 2.1 and 2.2</h4><br>
 					<li>
 						'Cron Helper' allows you to take care of all of your accidentally unchecked task entries, even though Habitica's cron time has already expired.<br>
 						After all desired tasks have been ticked off, the cron process can be triggered via the 'force cron' button. It's required that Habitica's cron time has already expired, though.
@@ -3020,7 +2993,8 @@ td, th {
 						On the Settings page, you can set an alternative property to search for if the threshold set causes undesirable results.
 					</li>
 					<li>Several modals have been optically refreshed and screen design has been given a little lifting in regards to mobile devices</li>
-					
+					<li>Display of Avatar on the skills-page and on equipping modal. </li>
+					<li>Fixed 'Return to Wardrobe Intelligence' button, not set to true on startup. </li>
 					<br>
 					<br> 
   			 		<h4>Version 2.0</h4><br>
@@ -3105,7 +3079,7 @@ td, th {
 
 	<div id="innerBody">
 		<h1>Habitican Wardrobes<br>
-			<span>(v 2.1 August 2019)</span>
+			<span>(v 2.2 September 2019)</span>
 		</h1>
 		<div id="headerExtras"></div>
 		<hr class="clear" />
