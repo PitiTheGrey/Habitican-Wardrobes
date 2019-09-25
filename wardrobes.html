@@ -528,7 +528,7 @@ function storageFirstLoad() {
 		if (user.items.gear.owned.head_special_2 == true) {legendary.head = 'head_special_2'} // fill up legendary
 		if (user.items.gear.owned.armor_special_2 == true) {legendary.armor = 'armor_special_2'}
 		if (user.items.gear.owned.weapon_special_2 == true) {legendary.weapon = 'weapon_special_2'}
-		if (user.items.gear.owned.shield_special_2 == true) {legendary.shield = 'shield_special_2'}		
+		if (user.items.gear.owned.shield_special_goldenknight == true) {legendary.shield = 'shield_special_goldenknight'}		
 		
 		// first run: check if there is better equipment in inventory, than the epquipment currently equipped 
 		for (var item in user.items.gear.owned){ 
@@ -1264,7 +1264,7 @@ function addAvatar(wardrobe) {
 	'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/skin_' + user.preferences.skin + '.png" style="position: absolute;">';
 	["eyewear", "headAccessory", "back", "body", "weapon", "armor", "head", "shield"].forEach (function(element) {
 		if (wardrobeEquippedObject[element] != 'undefined' && wardrobeEquippedObject[element] != '' && typeof wardrobeEquippedObject[element] != 'undefined') {
-			console.log(element + " " + wardrobeEquippedObject[element] + " " + typeof wardrobeEquippedObject[element]);
+			//console.log(element + " " + wardrobeEquippedObject[element] + " " + typeof wardrobeEquippedObject[element]);
 			if (!wardrobeEquippedObject[element].includes('base_0')){
 				if (element != "armor") {
 					avatar += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + wardrobe[element] + '.png" style="position: absolute;">'
@@ -2095,9 +2095,9 @@ async function callForceCron() {
 							'<div><pre>Best STR Gear: ' + JSON.stringify(strength, null, 4) + '</pre></div>' +
 							'<div><pre>Best CON Gear: ' + JSON.stringify(constitution, null, 4) + '</pre></div>' +
 							'<div><pre>Best Blessing Gear: ' + JSON.stringify(blessing, null, 4) + '</pre></div>' +
+							'<div><pre>Legendary Gear: ' + JSON.stringify(legendary, null, 4) + '</pre></div>' +
 							'<div><pre>Initial Gear HB: ' + JSON.stringify(user.items.gear.equipped, null, 4) + '</pre></div>' +
 							'<div><pre>Initial Gear JS: ' + JSON.stringify(initialGear, null, 4) + '</pre></div>';
-							'<div><pre>Legendary Gear: ' + JSON.stringify(legendary, null, 4) + '</pre></div></span>';
 			$('.dataSectionxy').html(displayGear);
 			$('#modalData').show();
 			}); // end of click
@@ -3123,13 +3123,13 @@ td, th {
 							Enter your Habitica API details
 							(from <a href="https://habitica.com/user/settings/api" target="_blank"> User Icon &gt; Settings &gt; API</a>)
 						</span>
-            			</legend>
-            			<label for="userId"><span>User ID</span>
-           	     		<input type="text" name="userId" id="userId" value=""> <!-- Value entfernen -->
-            			</label>
-            			<label for="apiToken"><span>API Token</span>
-           	     		<input type="password" name="apiToken" id="apiToken" value=""> <!-- Value entfernen -->
-            			</label>
+            		</legend>
+            		<label for="userId"><span>User ID</span>
+           	     		<input type="text" name="userId" id="userId" value="" /> <!-- Value entfernen -->
+            		</label>
+            		<label for="apiToken"><span>API Token</span>
+           	     		<input type="password" name="apiToken" id="apiToken" value="" /> <!-- Value entfernen -->
+            		</label>
 					<input type="submit" value="Fetch My Data" />
 						<p style="font-size: 8px;">
 							Datenschutzerklärung und Impressum:
