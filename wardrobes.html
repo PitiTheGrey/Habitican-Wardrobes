@@ -1085,9 +1085,9 @@ htmlStats += 	'<br><br>'+
 	function picsToFlexbox(copyGear) {
 		htmlStats +='<br>'; 
 		["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element){
-			//if (element in copyGear === true && typeof copyGear[element] != 'undefined') { 
+			
 			if (copyGear[element] != 'undefined' && copyGear[element] != '' && typeof wardrobeEquippedObject[element] != 'undefined') {
-				if (!copyGear[element].includes('base_0')) {
+				if (copyGear[element] && copyGear[element] != (element + '_base_0')) {
 					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' + 
   						'<p class="description">' + content.gear.flat[copyGear[element]].text +
 						'<br>INT: ' + content.gear.flat[copyGear[element]].int + ' PER: ' + content.gear.flat[copyGear[element]].per +
@@ -1134,7 +1134,7 @@ htmlStats += 	'<br><br>'+
 	
 	frontEnd = storeData("FrontEnd");
 	
-	//evaluateTasks();
+	
 	getMaxGear(); 
 	
 	htmlStats += '<div class="wardrobes-Container">'; 
@@ -1144,12 +1144,12 @@ htmlStats += 	'<br><br>'+
 	//start flexbox 1
 	// initialGear: 
 	htmlStats += '<div id="Initial" style="background-color: #cccccc"><h3>Equipped Gear:</h3>'; 
-	
+	console.log(JSON.stringify(copyGear));
 	calculateAttributes(copyGear); // continue with content of flexbox 1 there
 	htmlStats +='<br>'; 
 		["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element){
 			if (copyGear[element] != 'undefined' && copyGear[element] != ''  && typeof wardrobeEquippedObject[element] != 'undefined') {
-				if (!copyGear[element].includes('base_0')) {
+				if (copyGear[element] != (element + '_base_0')) {
 					console.log("initial: " + copyGear[element]); 
 					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' + 
   						'<p class="description">' + content.gear.flat[copyGear[element]].text +
