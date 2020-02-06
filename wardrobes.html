@@ -25,7 +25,9 @@ var serverUrl = 'https://habitica.com:443/api/v3';
 var userID     = '';
 var apiToken   = '';
 var url = '';
+var allowWerewolf = false; 
 var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"}; 
+var costume = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"};
 var blessing = {};
 var intelligence = {};
 var perception = {};
@@ -47,7 +49,8 @@ var userName = '';
 var equipCount = 0;
 var equipCountSkip = 0;
 var nameOfWardrobe = 'perception'; 
-				
+var werewolf = false; 
+var werewolfDates = ["18.12.2019"];			
 var skills = {"rogue": {
 				"field1": {
 					"name": "Tools of the Trade", 
@@ -248,7 +251,7 @@ var storeData = function storeData(key, value) {
         }
         
         // Try to parse JSON...
-        try {
+       /* try {
            data = JSON.parse(data);
         }
         catch(e) {
@@ -256,8 +259,8 @@ var storeData = function storeData(key, value) {
         }
 		if (data != null){
 			data = "" + data; 
-		}
-        return data;
+		}*/
+        return data;  
     }
     // Null specified, remove store
     if (value === null) {
@@ -416,7 +419,18 @@ function storageFirstLoad() {
 				storeData("Amulet and Arrow", "true"); 
 				$('#forceAetherAmuletAndComicalArrow').prop('checked', true);  
 			}
-		
+		allowWerewolf = storeData("Werewolf");
+			if (allowWerewolf == 'true') {
+				$('#allowWerewolf').prop('checked', true); 
+				$('#werewolf').show();
+				storeData('Werewolf', 'true');
+			} else {
+				$('#allowWerewolf').prop('checked', false); 
+				$('#werewolf').hide();
+				storeData('Werewolf', 'false');
+				allowWerewolf = false; 
+			}
+				
 		rememberGear = storeData("Remember Gear"); 
 			if (rememberGear != "false") 
 				{$('#rememberGear').prop('checked', true); rememberGear = "true";} 
@@ -459,11 +473,18 @@ function storageFirstLoad() {
 			$('#cronHelperWardrobeForCron').prop('value', cronHelperWardrobeForCron);
 			storeData('Cron', cronHelperWardrobeForCron);
 		}
-		
+		var isCostume = storeData('Costume');
+		if (isCostume == null) {
+			['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'].forEach(function(element){
+				costume[element] = user.items.gear.costume[element];
+			})  
+			storeData('Costume', JSON.stringify(costume));
+		} 
 		
 	
 	} // end of funciton storageFirstLoad
 	storageFirstLoad();
+	werewolf();
 	
 	function evaluateTasks() {
 		// get bluest Task for (Burst of Flames(Mage))   // challenge {}: Skill can only be cast on non-challenge tasks, but on habits, dailies and todos
@@ -1145,13 +1166,11 @@ htmlStats += 	'<br><br>'+
 	//start flexbox 1
 	// initialGear: 
 	htmlStats += '<div id="Initial" style="background-color: #cccccc"><h3>Equipped Gear:</h3>'; 
-	console.log(JSON.stringify(copyGear));
 	calculateAttributes(copyGear); // continue with content of flexbox 1 there
 	htmlStats +='<br>'; 
 		["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element){
 			if (copyGear[element] != 'undefined' && copyGear[element] != ''  && typeof wardrobeEquippedObject[element] != 'undefined') {
-				if (copyGear[element] != (element + '_base_0')) {
-					console.log("initial: " + copyGear[element]); 
+				if (copyGear[element] != (element + '_base_0')) { 
 					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' + 
   						'<p class="description">' + content.gear.flat[copyGear[element]].text +
 						'<br>INT: ' + content.gear.flat[copyGear[element]].int + ' PER: ' + content.gear.flat[copyGear[element]].per +
@@ -1261,7 +1280,7 @@ htmlStats += 	'<br><br>'+
 
 function addAvatar(wardrobe) {
 	avatar= '' +
-	'<div style="margin: 0px auto 0px 24px; width: 90px; height: 90px;">'+
+	'<div style="margin: -10px auto 0px 46px; width: 90px; height: 90px;">'+
 	'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/skin_' + user.preferences.skin + '.png" style="position: absolute;">';
 	["eyewear", "headAccessory", "back", "body", "weapon", "armor", "head", "shield"].forEach (function(element) {
 		if (wardrobeEquippedObject[element] != 'undefined' && wardrobeEquippedObject[element] != '' && typeof wardrobeEquippedObject[element] != 'undefined') {
@@ -1404,19 +1423,101 @@ async function doAjax(url){
 						xhr.setRequestHeader('x-api-user', userID);
 						xhr.setRequestHeader('x-api-key',  apiToken);
 					},
-					success: function(result){}
+					success: async function(result){}
 			});
 		return result;
 		} catch (error) {
 			console.log(error.responseText);
 		}						
 }; // end ajax
+
 function wait(waitTime) {
   return new Promise(resolve => setTimeout(() => {
     resolve()
   }, waitTime));
 }
+
+
+
+async function werewolf() {
+	var element = ['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'];
+	var costumeEquip = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''};
+	var costumeResult = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''}; // we need ..Result for writing back to user data
+	var today = new Date(); 
+	var year = today.getFullYear();
+	var month = today.getMonth(); 
+	var date = today.getDate(); 
+	// get moon phase (ben-daglish.net) (full moon always on phase 15)
+	var lp = 2551443; 
+	var now = new Date(year,month+1,date,20,35,0);						
+	var new_moon = new Date(1970, 0, 7, 20, 35, 0);
+	var phase = ((now.getTime() - new_moon.getTime()) / 1000) % lp;
+	var fullMoon = false; 
+	allowWerewolf = $('#allowWerewolf').is(':checked');
+	if ((Math.floor(phase / (24*3600) + 1)) == 15) {fullMoon = true;} 
+	if (fullMoon && allowWerewolf) {
+		//check if werewolf costume is already equipped
+		if (user.items.gear.costume.armor == "armor_mystery_201509" && user.items.gear.costume.head == "head_mystery_201509" ) {
+				console.log("Full moon and werewolf costume equipped");
+			} else {
+				$('#modalContent').html('today is full moon... you turn into a werewolf!');
+				$('#modal').show();
+				console.log("Full moon but werewolf costume not equipped");
+				// equipping werewolfCostume and unequip rest (hair would be cool, but there is no API)
+				for (var i=0; i<=7; i++) {
+					costume[element[i]] = user.items.gear.costume[element[i]]; // costume holds the initially equipped costume items
+					if (element[i] == 'armor' && user.items.gear.costume.armor != "armor_mystery_201509"){
+						costumeEquip.armor = 'armor_mystery_201509'; 
+						costumeResult.armor = 'armor_mystery_201509';
+					} else 
+					if (element[i] == 'head' && user.items.gear.costume.head != "head_mystery_201509"){
+						costumeEquip.head = 'head_mystery_201509';
+						costumeResult.head = 'head_mystery_201509';
+					} else					 
+					if (user.items.gear.costume[element[i]] != element+'_base_0') {
+						costumeEquip[element[i]] = user.items.gear.costume[element[i]]; // replace with same item to unequip
+						costumeResult[element[i]] = element[i] + '_base_0' // results in "nothing equipped"
+					}
+				}   // end for i
+				storeData('Costume', JSON.stringify(costume));
+				// prepare items to equip/unequip 
+				await callCostume(costumeEquip, costumeResult); 
+				
+			} // end else
+	} else {
+		// not full moon or werewolf not allowed  // equipping old costume back 
+		if (user.items.gear.costume.armor == "armor_mystery_201509" && user.items.gear.costume.head == "head_mystery_201509") {
+				$('#modalContent').html('... you are no werewolf anymore!');
+				$('#modal').show();
+				costume = JSON.parse(storeData('Costume')); 
+				console.log(costume); 
+				for (var i = 0; i <= 7; i++) {
+					if (costume[element[i]] != element[i]+'_base_0' && costume[element[i]] != user.items.gear.costume[element[i]]){ 
+						costumeEquip[element[i]] = costume[element[i]];
+						costumeResult[element[i]] = costume[element[i]]; 
+					}	
+					if (costume[element[i]] == user.items.gear.costume[element[i]]) { // item already equipped...
+						costumeEquip[element[i]] = costume[element[i]]; // skip equipping later in callCostume function
+						costumeResult[element[i]] = costume[element[i]];
+					}
+					if (costume[element[i]] == element[i]+'_base_0') { // nothing shall be equipped
+						costumeEquip[element[i]] = costume[element[i]]; // skip equipping later in callCostume function
+						costumeResult[element[i]] = element[i]+'_base_0';
+					}
+				} // end for i 
+				await callCostume(costume, costume); // skip _base_0 in callCostume function		
+		} else {
+			console.log("Not full moon and werewolf costume not equipped -> write costume to localStorage"); 
+			for (var i = 0; i <= 7; i++) {
+				costume[element[i]] = user.items.gear.costume[element[i]]; 
+			} // end for i
+			storeData('Costume', JSON.stringify(costume)); 
+		} // end else werewolf not equipped
+	} // end else (not full moon)
+} // end function werewolf
+
 async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {  
+  var waitTime = 0; 
   $('#modalContentAbort').css("top", "27%");
   $('#modalContentAbort').show(); 	
   if (user.stats.class == 'wizard' && field == 'field2') {url += '?targetId=' + skills.wizard[field].taskId;}
@@ -1428,14 +1529,51 @@ async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
 		if (url.includes('?')) {
 			$('#modalContent').html('casting: ' + name + '<br> on ' + skills[user.stats.class][field].task + '<br>' + i + '/' + amount + '<br>');		
 			}		
-		await doAjax(url);
+		waitTime = 1000 + (1000 * amount / (0.01 * amount + 20))	
+		await doAjax(url, waitTime);
 		user.stats.mp = (user.stats.mp - cost);
-  		await wait(1000+(1000 * amount / (0.01 * amount + 20)));
   	} // end if abort
 	} //end for
   parseData();
   $('#modalContentAbort').hide(); 
 } // end callSkills...
+
+async function callCostume(costumeEquip, costumeResult) {
+		
+		var itemToEquip = '';
+		var typeOfItem = '';
+		equipCount = 0;
+		equipCountSkip = 0; 
+		$('#modalContent').html('Equipping...');
+		$('#modal').show();
+		for (var i in ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]) { 
+				var element = costumeEquip[["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"][i]];  // fromat gear: head_base_0 e.g.
+			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
+			typeOfItem = content.gear.flat[element].type; //eg displays: head (good)
+			// verify if item is already equipped
+			htmlEnd += content.gear.flat[element].text + '<br>';
+					
+			if (element == typeOfItem + '_base_0') {
+					equipCountSkip++;
+					if (equipCountSkip===Object.keys(costumeEquip).length){ 
+						$('#modalContent').html('already equipped');
+						await wait(1000);
+					} // end if equipCountSkip
+			} else {	
+				url = 'https://habitica.com/api/v3/user/equip/costume/' + element;
+				$('#modalContent').html('Equipping ' + itemToEquip + '<br>' + (equipCountSkip + equipCount + 1) + '/8<br>');
+				console.log(url); 
+				await doAjax(url);	 
+				user.items.gear.costume[typeOfItem] = costumeResult[typeOfItem];
+				equipCount++; 
+				await wait(500); 		
+			} // end else
+		}; // end each
+		await wait(50);
+		$('#modal').hide();
+		$('#modalContentAbort').hide();
+} // end function callCostume 
+
 async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
 		
 		var itemToEquip = '';
@@ -1462,7 +1600,7 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 						} // end if equipCountSkip
 				} else {	
 					url = 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip;
-					$('#modalContent').html('Equipping wardrobe ' + nameOfWardrobe + '<br>' + (equipCountSkip + equipCount) + '/8<br>' + avatar + '<br>');
+					$('#modalContent').html('Equipping wardrobe ' + nameOfWardrobe + '<br>' + (equipCountSkip + equipCount + 1) + '/8<br>' + avatar + '<br>');
 					await doAjax(url);	 
 					user.items.gear.equipped[typeOfItem] = itemToEquip;
 					wardrobeEquippedObject[typeOfItem] = itemToEquip;
@@ -1472,7 +1610,7 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 				} // end else
 			} //end if abort
 		}; // end each
-		await wait(500);
+		await wait(50);
 		$('#modal').hide();
 		$('#modalContentAbort').hide();
 		getEquippedWardrobes();
@@ -1582,7 +1720,7 @@ async function partyCronTimes(){
 		var i=0;
 		for (members in party.quest.members) { // member resolves in f74e2316-cad6-4da4-83aa-1ac8c586a8fc eg
 			memberId[i] = members; 
-			$('#modalContent').html('Loading member data...' + i);
+			$('#modalContent').html('Loading member data...' + (i + 1));
 			memberData = await loadMember(memberId[i]);
 			memberName[i] = memberData.auth.local.username;
 			var date = new Date(memberData.auth.timestamps.loggedin); // transfer UTC to local time zone
@@ -1945,7 +2083,7 @@ async function abortFunction() {
 	console.log(abort);
 	$('#modalContent').html('aborting...');
 	$('#modal').show();
-	await wait(1000);
+	await wait(2000);
 	abort = false;
 	fetchData();
 	console.log(abort);
@@ -1956,8 +2094,16 @@ async function abortFunction() {
 ///////////////// Buttons ///////////////////////
 /////////////////////////////////////////////////
 	 
-	// $('#buttons').html(buttons);
-	 
+	$( document ).ready(function() {
+    	if (user.items.gear.owned.head_mystery_201509 && user.items.gear.owned.armor_mystery_201509) {
+			$('#werewolf').show();
+		} else {
+			$('#werewolf').hide();
+		}
+	});
+	
+	
+		 
 	 $(document).click(function(event) {
 	 
 			var eclass = $(event.target).closest().prevObject[0].className; 
@@ -2230,6 +2376,11 @@ async function abortFunction() {
 		rememberGear = JSON.stringify($('#rememberGear').is(':checked')); 
 		storeData("Remember Gear", rememberGear); 
 		console.log(rememberGear);
+		})
+	$('#allowWerewolf').click(function(){
+		allowWerewolf = $('#allowWerewolf').is(':checked');
+		storeData('Werewolf', allowWerewolf);
+		werewolf();
 		})
 	$('#modalAbortButton').click(function () {
 		abort = true;
@@ -2900,7 +3051,18 @@ td, th {
 					<hr>
 					<p>Show History on Data\Tasks: <input id="showHistory" type="checkbox" autocomplete="off" /><span style="font-size: x-small">(Initially hidden for better view)</span></p>
 					<hr>
-					<p></p>
+					<p>Werewolf equipper</p>
+					<p style="font-size: x-small">
+						The honorable user <a href="https://habitica.com/profile/410b09e8-b870-4e30-80ac-2c99e9fd9678" target="_blank">@psn aka Spiro</a> from the 
+						<a href="https://habitica.com/groups/guild/2ff9822b-27f2-4774-98da-db349b57a38e" target="_blank">Aspiring Comrades Guild</a> is the author of the 
+						<a href="https://habitica.fandom.com/wiki/Werewolf_Equipper" target="_blank">werewolf equipper</a> script, that equips the werewolf costume
+						on days with full moon. 
+						The author agreed upon Habitican Wardrobes to host the werewolf feature as well. 
+						If you choose to allow the Werewolf equipper, you will get the costume equipped on days with full moon, and get your previously worn costume back on
+						the following day. The feature is only available if you own the werewolf costume. </p>
+					<p id="werewolf">Allow Werewolf <input id="allowWerewolf" type="checkbox" autocomplete="off" /></p>	
+						     
+					
 										
 				</div>					
 			</div>
@@ -2989,7 +3151,7 @@ td, th {
 					<ol style="list-style-position: outside;"> 
 						Help: <br><br>
 						<li>Habitican Wardrobes is a HTML-File using Javascript. <br>The code can be found on 
-						<a href="https://github.com/PitiTheGrey/Habitican-Wardrobes">Github</a></li>
+						<a href="https://github.com/PitiTheGrey/Habitican-Wardrobes" target="_blank">Github</a></li>
 						<li>There is a <a href="https://habitica.com/groups/guild/ba3e642f-a109-4ad2-b041-301c2935189f">Habitican Wardrobes Guild</a> 
 						on Habitica to discuss feature requests, report bugs, ask questions, give feedback and alike. </li>
 						<li>Please feel free to read the <a href="https://habitica.fandom.com/wiki/Habitican_Wardrobes">wiki page</a> about Habitican Wardrobes and the 
@@ -3020,6 +3182,15 @@ td, th {
 					<h4>Version 2.3</h4><br>
 					<li>
 						An "Abort"-button was added to stop the rutines "equipping gear" and "casting skills". 
+					</li>
+					<li>
+						The honorable user <a href="https://habitica.com/profile/410b09e8-b870-4e30-80ac-2c99e9fd9678" target="_blank">@psn aka Spiro</a> from the 
+						<a href="https://habitica.com/groups/guild/2ff9822b-27f2-4774-98da-db349b57a38e" target="_blank">Aspiring Comrades Guild</a> is the author of the 
+						<a href="https://habitica.fandom.com/wiki/Werewolf_Equipper" target="_blank">werewolf equipper</a> script, that equips the werewolf costume
+						on days with full moon. 
+						The author agreed upon Habitican Wardrobes to host the werewolf feature as well. 
+						If you choose to allow the Werewolf equipper, you will get the costume equipped on days with full moon, and get your previously worn costume back on
+						the following day. The feature is only available if you own the werewolf costume. The feature needs to be activated in the Settings-menu.
 					</li>
 					
 					<h4>Version 2.1 and 2.2</h4><br>
