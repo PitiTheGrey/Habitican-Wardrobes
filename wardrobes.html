@@ -1,4 +1,4 @@
-<!doctype html>
+	<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -527,6 +527,8 @@ function storageFirstLoad() {
 					}	
 				} // end if daily
 		}; // end for
+		dailyCompleted += user.stats.buffs.stealth; // Rouges can go stealth and imitate dalies as done
+		if (dailyCompleted > dailyTotal) {dailyCompleted = dailyTotal;} 
 	}; // end of function evaluateTasks;
 	
 	function getMaxGear() {
@@ -883,8 +885,11 @@ function calculateAttributes(wardrobe) {
 							manaAfterCronPerfectDay = manaMaxAfterCronPerfectDay;
 						}
 		// Progression of Mana around Cron time
-		htmlStats +='<section class="containerMana"><div style="font-weight: bold">&nbsp; Progression of Mana</div>'+
-					'<div class="left">Dailies completed:<br><br>' + //first column
+		if (user.stats.buffs.stealth > 0) {
+			htmlStats +='<section class="containerMana"><div style="font-weight: bold">&nbsp; Progression of Mana <span style="font-weight: normal">(stealth: ' + user.stats.buffs.stealth + ' dailies)</span></div>';
+		} else {htmlStats +='<section class="containerMana"><div style="font-weight: bold">&nbsp; Progression of Mana</div>';}
+		 
+		htmlStats +='<div class="left">Dailies completed:<br><br>' + //first column
 					'current Mana:<br>' +
 					'Mana refresh at cron:<br>'+
 					'Mana lost on cron:<br>'+
@@ -1259,7 +1264,7 @@ htmlStats += 	'<br><br>'+
 	picsToFlexbox(copyGear); 
 	
 	// Flexbox for info about which wardrobe is currently equipped and for some buttons
-	htmlStats +='<div id="Overview and Buttons">You are wearing:' +
+	htmlStats +='<div id="Overview">You are wearing:' +
 				'<div id="percept">Wardrobe PER</div>' +
 				'<div id="blessin">Wardrobe Blessing</div>' +
 				'<div id="strengt">Wardrobe STR</div>' +
@@ -1271,10 +1276,10 @@ htmlStats += 	'<br><br>'+
 				'<div>Your most valueable task is: </div><div> ' + mostValueableTaskName + '<div></div><div> with a value of: ' + Math.round(mostValueableTaskValue) + '</div><div></div>' +
 				'</div>' + // end single box;
 				'</div>'; // end Flexboxes
-			
+		
 	$('#userStats').html(htmlStats);
 	addBorderToSelectedWardrobe();
-	
+	$('#Overview').hide(); 	
 	
 //	} // end function drawFlexboxes; 
 
@@ -2559,10 +2564,11 @@ div.scroll {
 .innerOne {
 	text-transform: uppercase;
 	text-align: center;
-	vertical-align: 5px;
+	
+	margin-top: 6%; 
 	font-size: large;
     width: 45%;
-    height: 70px;
+    height: 60px;
     background: #ffffff;
 	color: #4e4a57;
 	float: left;
@@ -2577,7 +2583,7 @@ div.scroll {
 }
 .containerMana {
     border-radius: 8px;
-	width: 92%;
+	width: 91%;
     height: 110px;
     color: #4e4a57;
     margin: auto;
@@ -2591,7 +2597,7 @@ div.scroll {
 	float: left;
 }
 .middle {
-	width: 20%;
+	width: 16%;
 	text-align: right;
 	float: left;
 }
@@ -3192,6 +3198,8 @@ td, th {
 						If you choose to allow the Werewolf equipper, you will get the costume equipped on days with full moon, and get your previously worn costume back on
 						the following day. The feature is only available if you own the werewolf costume. The feature needs to be activated in the Settings-menu.
 					</li>
+					<li>Minor CSS adjustments</li>
+					<li>The impact of the skill "Stealth" which a rogue can cast, is displayed next to "progression of mana" and the number of dailies done is increased by the number of stealthed dailies.</li>
 					
 					<h4>Version 2.1 and 2.2</h4><br>
 					<li>
@@ -3394,4 +3402,4 @@ td, th {
 	</div><!-- end of div id="innerBody" -->
 </body>
 
-</html>
+</html>	
