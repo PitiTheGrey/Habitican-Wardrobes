@@ -1,4 +1,4 @@
-	<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -28,6 +28,7 @@ var url = '';
 var allowWerewolf = false; 
 var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"}; 
 var costume = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"};
+var preferences = {"hair": {"base": 0}, "chair": "none"};
 var blessing = {};
 var intelligence = {};
 var perception = {};
@@ -49,12 +50,11 @@ var userName = '';
 var equipCount = 0;
 var equipCountSkip = 0;
 var nameOfWardrobe = 'perception'; 
-var werewolf = false; 
-var werewolfDates = ["18.12.2019"];			
+var werewolf = false; 	
 var skills = {"rogue": {
 				"field1": {
 					"name": "Tools of the Trade", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/toolsOfTrade",
+                    "API": "https://habitica.com/api/v3/user/class/cast/toolsOfTrade",
                     "cost": 25, 
 					"nameOfWardrobe": "Perception",
 					"unlock": 13,  
@@ -62,14 +62,14 @@ var skills = {"rogue": {
 					},
 				"field2": {
 					"name": "Stealth", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/stealth",
+                    "API": "https://habitica.com/api/v3/user/class/cast/stealth",
                     "cost": 45, 
 					"nameOfWardrobe": "Perception",
 					"unlock": 14,
 					"wardrobe": "perception" },
 				"field3": {
 					"name": "Pickpocket", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/pickPocket",
+                    "API": "https://habitica.com/api/v3/user/class/cast/pickPocket",
                     "cost": 10, 
 					"nameOfWardrobe": "Perception",
 					"wardrobe": "perception",
@@ -78,7 +78,7 @@ var skills = {"rogue": {
 					"taskId": "pending"},
 				"field4": {
 					"name": "Backstab", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/backStab",
+                    "API": "https://habitica.com/api/v3/user/class/cast/backStab",
                     "cost": 15, 
 					"nameOfWardrobe": "Strength",
 					"wardrobe": "strength",
@@ -89,14 +89,14 @@ var skills = {"rogue": {
 			  "wizard": {
 				"field1": {
 					"name": "Earthquake", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/earth",
+                    "API": "https://habitica.com/api/v3/user/class/cast/earth",
                     "cost": 35, 
 					"nameOfWardrobe": "Intelligence",
 					"unlock": 13, 
 					"wardrobe": "intelligence" },
 				"field2": {
 					"name": "Burst of Flames", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/fireball",
+                    "API": "https://habitica.com/api/v3/user/class/cast/fireball",
                     "cost": 10, 
 					"nameOfWardrobe": "Intelligence",
 					"wardrobe": "intelligence",
@@ -106,7 +106,7 @@ var skills = {"rogue": {
 					},
 				"field3": {
 					"name": "Ethereal Surge", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/mpheal",
+                    "API": "https://habitica.com/api/v3/user/class/cast/mpheal",
                     "cost": 30, 
 					"nameOfWardrobe": "Intelligence",
 					"unlock": 12, 
@@ -114,7 +114,7 @@ var skills = {"rogue": {
 					},
 				"field4": {
 					"name": "Chilling Frost", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/frost",
+                    "API": "https://habitica.com/api/v3/user/class/cast/frost",
                     "cost": 40, 
 					"nameOfWardrobe": "Intelligence",
 					"unlock": 14, 
@@ -123,14 +123,14 @@ var skills = {"rogue": {
 			  "warrior": {
 				"field1": {
 					"name": "Valorous Presence", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/valorousPresence",
+                    "API": "https://habitica.com/api/v3/user/class/cast/valorousPresence",
                     "cost": 20, 
 					"nameOfWardrobe": "Strength",
 					"unlock": 13, 
 					"wardrobe": "strength" },
 				"field2": {
 					"name": "Brutal Smash", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/smash",
+                    "API": "https://habitica.com/api/v3/user/class/cast/smash",
                     "cost": 10, 
 					"nameOfWardrobe": "Strength",
 					"wardrobe": "strength",
@@ -139,14 +139,14 @@ var skills = {"rogue": {
 					"taskId": "pending" },
 				"field3": {
 					"name": "Intimidating Gaze", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/intimidate",
+                    "API": "https://habitica.com/api/v3/user/class/cast/intimidate",
                     "cost": 15, 
 					"nameOfWardrobe": "Constitution",
 					"unlock": 14, 
 					"wardrobe": "constitution" },
 				"field4": {
 					"name": "Defensive Stance", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/defensiveStance",
+                    "API": "https://habitica.com/api/v3/user/class/cast/defensiveStance",
                     "cost": 25, 
 					"nameOfWardrobe": "Constitution",
 					"unlock": 12, 
@@ -155,28 +155,28 @@ var skills = {"rogue": {
 			  "healer": {
 				"field1": {
 					"name": "Protective Aura", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/protectAura",
+                    "API": "https://habitica.com/api/v3/user/class/cast/protectAura",
                     "cost": 15, 
 					"nameOfWardrobe": "Blessing",
 					"unlock": 13, 
 					"wardrobe": "blessing" },
 				"field2": {
 					"name": "Searing Brightness", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/brightness",
+                    "API": "https://habitica.com/api/v3/user/class/cast/brightness",
                     "cost": 15, 
 					"nameOfWardrobe": "Constitution",
 					"unlock": 12, 
 					"wardrobe": "constitution" },
 				"field3": {
 					"name": "Blessing", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/healAll",
+                    "API": "https://habitica.com/api/v3/user/class/cast/healAll",
                     "cost": 25, 
 					"nameOfWardrobe": "Blessing",
 					"unlock": 14, 
 					"wardrobe": "blessing" },
 				"field4": {
 					"name": "Healing Light", 
-                    "API": "https://habitica.com/api/v4/user/class/cast/heal",
+                    "API": "https://habitica.com/api/v3/user/class/cast/heal",
                     "cost": 15, 
 					"nameOfWardrobe": "Blessing",
 					"unlock": 11, 
@@ -480,11 +480,18 @@ function storageFirstLoad() {
 			})  
 			storeData('Costume', JSON.stringify(costume));
 		} 
+		var isPreferences = storeData('Preferences'); 
+		if (isPreferences == null) {
+			preferences.chair = user.preferences.chair; 
+			preferences.hair.base = user.preferences.hair.base; 
+			storeData('Preferences', JSON.stringify(preferences));
+		}
 		
 	
 	} // end of funciton storageFirstLoad
 	storageFirstLoad();
 	werewolf();
+	
 	
 	function evaluateTasks() {
 		// get bluest Task for (Burst of Flames(Mage))   // challenge {}: Skill can only be cast on non-challenge tasks, but on habits, dailies and todos
@@ -1446,8 +1453,9 @@ function wait(waitTime) {
 
 async function werewolf() {
 	var element = ['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'];
-	var costumeEquip = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''};
-	var costumeResult = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''}; // we need ..Result for writing back to user data
+	var costumeEquip = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':'', 'hair': 0};
+	var costumeResult = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':'', 'hair': 0}; // we need ..Result for writing back to user data
+	var preferencesEquip = {'hair': {'base': 0}, 'chair': 'none'};
 	var today = new Date(); 
 	var year = today.getFullYear();
 	var month = today.getMonth(); 
@@ -1459,36 +1467,48 @@ async function werewolf() {
 	var phase = ((now.getTime() - new_moon.getTime()) / 1000) % lp;
 	var fullMoon = false; 
 	allowWerewolf = $('#allowWerewolf').is(':checked');
-	if ((Math.floor(phase / (24*3600) + 1)) == 15) {fullMoon = true;} 
+	if ((Math.floor(phase / (24*3600) + 1)) != 15) {fullMoon = true;} // for testing: != , for work: == 
+	
 	if (fullMoon && allowWerewolf) {
-		//check if werewolf costume is already equipped
-		if (user.items.gear.costume.armor == "armor_mystery_201509" && user.items.gear.costume.head == "head_mystery_201509" ) {
+		//check if werewolf costume is equipped
+		if (user.items.gear.costume.armor == "armor_mystery_201509" && 
+			user.items.gear.costume.head == "head_mystery_201509" ) {
 				console.log("Full moon and werewolf costume equipped");
-			} else {
-				$('#modalContent').html('today is full moon... you turn into a werewolf!');
-				$('#modal').show();
-				console.log("Full moon but werewolf costume not equipped");
-				// equipping werewolfCostume and unequip rest (hair would be cool, but there is no API)
-				for (var i=0; i<=7; i++) {
-					costume[element[i]] = user.items.gear.costume[element[i]]; // costume holds the initially equipped costume items
-					if (element[i] == 'armor' && user.items.gear.costume.armor != "armor_mystery_201509"){
-						costumeEquip.armor = 'armor_mystery_201509'; 
-						costumeResult.armor = 'armor_mystery_201509';
-					} else 
-					if (element[i] == 'head' && user.items.gear.costume.head != "head_mystery_201509"){
-						costumeEquip.head = 'head_mystery_201509';
-						costumeResult.head = 'head_mystery_201509';
-					} else					 
-					if (user.items.gear.costume[element[i]] != element+'_base_0') {
-						costumeEquip[element[i]] = user.items.gear.costume[element[i]]; // replace with same item to unequip
-						costumeResult[element[i]] = element[i] + '_base_0' // results in "nothing equipped"
-					}
-				}   // end for i
-				storeData('Costume', JSON.stringify(costume));
-				// prepare items to equip/unequip 
-				await callCostume(costumeEquip, costumeResult); 
+		} else {
+			$('#modalContent').html('today is full moon... you turn into a werewolf!');
+			$('#modal').show();
+			console.log("Full moon but werewolf costume not equipped");
+			// equipping werewolfCostume and unequip rest (hair would be cool, but there is no API. ... Oh, wait... there is!)
+			for (var i=0; i<=7; i++) { 
+				costume[element[i]] = user.items.gear.costume[element[i]]; // costume holds the initially equipped costume items
+				if (element[i] == 'armor' && user.items.gear.costume.armor != "armor_mystery_201509"){
+					costumeEquip.armor = 'armor_mystery_201509'; 
+					costumeResult.armor = 'armor_mystery_201509';
+				} else 
+				if (element[i] == 'head' && user.items.gear.costume.head != "head_mystery_201509"){
+					costumeEquip.head = 'head_mystery_201509';
+					costumeResult.head = 'head_mystery_201509';
+				} else					 
+				if (user.items.gear.costume[element[i]] != element+'_base_0') {
+					costumeEquip[element[i]] = user.items.gear.costume[element[i]]; // replace with same item to unequip
+					costumeResult[element[i]] = element[i] + '_base_0' // results in "nothing equipped"
+				}
 				
-			} // end else
+			}   // end for i
+			storeData('Costume', JSON.stringify(costume));
+			await callCostume(costumeEquip, costumeResult); 
+			// ... then handle preferences 
+			preferences.hair.base = user.preferences.hair.base; 
+			preferences.chair = user.preferences.chair; 
+			storeData('Preferences', JSON.stringify(preferences));
+			preferencesEquip.hair.base = 0; 
+			await callPreferences({'preferences.hair.base': 0}); 
+			user.preferences.hair.base = 0; 
+			await callPreferences({'preferences.chair': "none"}); 
+			user.preferences.chair = "none"; 
+			} // end else (full moon but werewolf not equipped)
+			
+			
 	} else {
 		// not full moon or werewolf not allowed  // equipping old costume back 
 		if (user.items.gear.costume.armor == "armor_mystery_201509" && user.items.gear.costume.head == "head_mystery_201509") {
@@ -1510,13 +1530,24 @@ async function werewolf() {
 						costumeResult[element[i]] = element[i]+'_base_0';
 					}
 				} // end for i 
-				await callCostume(costume, costume); // skip _base_0 in callCostume function		
+				await callCostume(costumeEquip, costumeResult);
+				preferences = storeData('Preferences'); 
+				// now to the preferences: 
+				preferences = JSON.parse(storeData('Preferences')); 
+				console.log(preferences.hair.base);
+				await callPreferences({'preferences.hair.base' : preferences.hair.base}); 
+				user.preferences.hair.base = preferences.hair.base; 
+				await callPreferences({'preferences.chair' : preferences.chair}); 
+				user.preferences.chair = preferences.chair; 
+					
 		} else {
 			console.log("Not full moon and werewolf costume not equipped -> write costume to localStorage"); 
 			for (var i = 0; i <= 7; i++) {
 				costume[element[i]] = user.items.gear.costume[element[i]]; 
 			} // end for i
-			storeData('Costume', JSON.stringify(costume)); 
+			preferences.hair.base = user.preferences.hair.base; 
+			preferences.chair = user.preferences.chair; 
+			storeData('Preferences', JSON.stringify(preferences)); 
 		} // end else werewolf not equipped
 	} // end else (not full moon)
 } // end function werewolf
@@ -1544,7 +1575,7 @@ async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
 } // end callSkills...
 
 async function callCostume(costumeEquip, costumeResult) {
-		
+		// {"preferences.hair.base":15} to ...api/v3/user PUT
 		var itemToEquip = '';
 		var typeOfItem = '';
 		equipCount = 0;
@@ -1571,13 +1602,40 @@ async function callCostume(costumeEquip, costumeResult) {
 				await doAjax(url);	 
 				user.items.gear.costume[typeOfItem] = costumeResult[typeOfItem];
 				equipCount++; 
-				await wait(500); 		
+				await wait(500);	
 			} // end else
-		}; // end each
+		}; // end for var i 
 		await wait(50);
 		$('#modal').hide();
 		$('#modalContentAbort').hide();
 } // end function callCostume 
+
+
+async function callPreferences(data) {
+ 
+	console.log(data + typeof(data) + JSON.stringify(data));  
+	let result; 
+	try {
+		result = await $.ajax({	
+				url: 'https://habitica.com/api/v3/user',
+				data: JSON.stringify(data), 
+				type: 'PUT', 
+				dataType: 'json', 
+				contentType: 'application/json', 
+				cache: false,
+				beforeSend: function(xhr){
+					xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-API-Tool');
+					xhr.setRequestHeader('x-api-user', userID);
+					xhr.setRequestHeader('x-api-key',  apiToken);
+				},
+				success: function(result){}
+		});
+		} catch (error) {
+			console.log(error.responseText);
+			}
+} // end async function callPreferences
+	 
+
 
 async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
 		
@@ -3185,13 +3243,15 @@ td, th {
 				<div class="dataSectionFix">
 					<h3>Version Info:</h3><br><br>
 			    	<ol style="list-style-position: outside;"> 
+					<h4>Version 2.4</h4><br>
+						Improvement of Werewolf-equipper. Hair and Wheelchair do not disturb anymore. 
 					<h4>Version 2.3</h4><br>
 					<li>
 						An "Abort"-button was added to stop the rutines "equipping gear" and "casting skills". 
 					</li>
 					<li>
 						The honorable user <a href="https://habitica.com/profile/410b09e8-b870-4e30-80ac-2c99e9fd9678" target="_blank">@psn aka Spiro</a> from the 
-						<a href="https://habitica.com/groups/guild/2ff9822b-27f2-4774-98da-db349b57a38e" target="_blank">Aspiring Comrades Guild</a> is the author of the 
+						<a href="https://habitica.com/groups/guild/2ff9822b-27f2-4774-98da-db349b57a38e" target="_blank">Aspiring Comrades Guild</a> is the author and inventer of the 
 						<a href="https://habitica.fandom.com/wiki/Werewolf_Equipper" target="_blank">werewolf equipper</a> script, that equips the werewolf costume
 						on days with full moon. 
 						The author agreed upon Habitican Wardrobes to host the werewolf feature as well. 
@@ -3308,7 +3368,7 @@ td, th {
 
 	<div id="innerBody">
 		<h1>Habitican Wardrobes<br>
-			<span>(v 2.3 December 2019)</span>
+			<span>(v 2.3 February 2020)</span>
 		</h1>
 		<div id="headerExtras"></div>
 		<hr class="clear" />
@@ -3402,4 +3462,4 @@ td, th {
 	</div><!-- end of div id="innerBody" -->
 </body>
 
-</html>	
+</html>
