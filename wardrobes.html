@@ -1565,7 +1565,8 @@ async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
 		if (url.includes('?')) {
 			$('#modalContent').html('casting: ' + name + '<br> on ' + skills[user.stats.class][field].task + '<br>' + i + '/' + amount + '<br>');		
 			}		
-		waitTime = 1000 + (1000 * amount / (0.01 * amount + 20))	
+		waitTime = 1000 + (1000 * amount / (0.01 * amount + 20));
+		await wait(waitTime); 
 		await doAjax(url, waitTime);
 		user.stats.mp = (user.stats.mp - cost);
   	} // end if abort
