@@ -1431,7 +1431,7 @@ async function doAjax(url){
 					dataType: 'json',
 					cache: false,
 					beforeSend: function(xhr){
-						xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
+						xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes v.2.5');
 						xhr.setRequestHeader('x-api-user', userID);
 						xhr.setRequestHeader('x-api-key',  apiToken);
 					},
@@ -1453,8 +1453,8 @@ function wait(waitTime) {
 
 async function werewolf() {
 	var element = ['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'];
-	var costumeEquip = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':'', 'hair': 0};
-	var costumeResult = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':'', 'hair': 0}; // we need ..Result for writing back to user data
+	var costumeEquip = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''};
+	var costumeResult = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''}; // we need ..Result for writing back to user data
 	var preferencesEquip = {'hair': {'base': 0}, 'chair': 'none'};
 	var today = new Date(); 
 	var year = today.getFullYear();
@@ -1467,7 +1467,7 @@ async function werewolf() {
 	var phase = ((now.getTime() - new_moon.getTime()) / 1000) % lp;
 	var fullMoon = false; 
 	allowWerewolf = $('#allowWerewolf').is(':checked');
-	if ((Math.floor(phase / (24*3600) + 1)) != 15) {fullMoon = true;} // for testing: != , for work: == 
+	if ((Math.floor(phase / (24*3600) + 1)) == 15) {fullMoon = true;} // for testing: != , for work: == 
 	
 	if (fullMoon && allowWerewolf) {
 		//check if werewolf costume is equipped
@@ -1555,7 +1555,11 @@ async function werewolf() {
 async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {  
   var waitTime = 0; 
   $('#modalContentAbort').css("top", "27%");
-  $('#modalContentAbort').show(); 	
+  $('#modalContentAbort').show(); 
+  if (amount > 20) {
+  	amount = 20; 
+	alert("The number of skills to be cast is reduced to 20 \n The field value is set back to 1 \n Please do not overload the Habitica Server"); 
+  }	
   if (user.stats.class == 'wizard' && field == 'field2') {url += '?targetId=' + skills.wizard[field].taskId;}
   if (user.stats.class == 'warrior'&& field == 'field2') {url += '?targetId=' + skills.warrior[field].taskId;}
   if (user.stats.class == 'rogue' && (field == 'field3' || field == 'field4')) {url += '?targetId=' + skills.rogue[field].taskId;}  
@@ -1565,10 +1569,10 @@ async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
 		if (url.includes('?')) {
 			$('#modalContent').html('casting: ' + name + '<br> on ' + skills[user.stats.class][field].task + '<br>' + i + '/' + amount + '<br>');		
 			}		
-		waitTime = 1000 + (1000 * amount / (0.01 * amount + 20));
+		waitTime = 3000 + (1000 * amount / (0.01 * amount + 20))	
+		await doAjax(url);
 		await wait(waitTime); 
-		await doAjax(url, waitTime);
-		user.stats.mp = (user.stats.mp - cost);
+user.stats.mp = (user.stats.mp - cost);
   	} // end if abort
 	} //end for
   parseData();
@@ -2370,6 +2374,10 @@ async function abortFunction() {
 		}
 		})
 	$('#castSkill1').click(function () {
+		if (document.querySelector('#amount1').value > 20) {
+			document.querySelector("#amount1").value = 20; 
+			alert("Values above 20 for this entry are not allowed");
+			}
 		storeData('skill1', JSON.stringify(document.querySelector('#amount1').value));
 		amountOfSkill = getAmountOfSkill("field1"); 
 		prepareTriple(amountOfSkill,
@@ -2379,8 +2387,13 @@ async function abortFunction() {
 				  skills[user.stats.class].field1.wardrobe,
 				  skills[user.stats.class].field1.nameOfWardrobe, 
 				  'field1');	
+		*/
 		})		
 	$('#castSkill2').click(function () {
+		if (document.querySelector('#amount2').value > 20) {
+			document.querySelector("#amount2").value = 20; 
+			alert("Values above 20 for this entry are not allowed");
+			}
 		storeData('skill2', JSON.stringify(document.querySelector('#amount2').value));
 		amountOfSkill = getAmountOfSkill('field2'); 
 		prepareTriple(amountOfSkill,
@@ -2392,6 +2405,10 @@ async function abortFunction() {
 				  'field2');	
 		})
 	$('#castSkill3').click(function () {
+	if (document.querySelector('#amount3').value > 20) {
+			document.querySelector("#amount3").value = 20; 
+			alert("Values above 20 for this entry are not allowed");
+			}
 		storeData('skill3', JSON.stringify(document.querySelector('#amount3').value));
 		amountOfSkill = getAmountOfSkill('field3'); 
 		prepareTriple(amountOfSkill,
@@ -2403,6 +2420,10 @@ async function abortFunction() {
 				  'field3');	
 		})
 	$('#castSkill4').click(function () {
+		if (document.querySelector('#amount4').value > 20) {
+			document.querySelector("#amount4").value = 20; 
+			alert("Values above 20 for this entry are not allowed");
+			}
 		storeData('skill4', JSON.stringify(document.querySelector('#amount4').value));
 		amountOfSkill = getAmountOfSkill('field4'); 
 		prepareTriple(amountOfSkill,
