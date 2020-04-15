@@ -37,6 +37,7 @@ var strength = {};
 var initialGear = {};
 var amountOfSkill = 0; 
 var rememberGear = "true"; // use string (required by localStorage)
+var castOnBluestTask = "true"; // use string (required by localStorage) 
 var threshold = 3;
 var alternativeAttribute = 'none';
 var forceAetherAmuletAndComicalArrow = 'false';
@@ -74,7 +75,7 @@ var skills = {"rogue": {
 					"nameOfWardrobe": "Perception",
 					"wardrobe": "perception",
 					"unlock": 11, 
-					"task": "pending",  // will be replaced by evaluateTasks();
+					"task": "pending",  // will be replaced by getBluestTask();
 					"taskId": "pending"},
 				"field4": {
 					"name": "Backstab", 
@@ -437,7 +438,15 @@ function storageFirstLoad() {
 			else {
 				{$('#rememberGear').prop('checked', false); rememberGear = "false";}
 			}
-			storeData("Remember Gear", rememberGear); 		
+			storeData("Remember Gear", rememberGear); 	
+			
+		castOnBluestTask = storeData("Bluest Task");
+			if (castOnBluestTask != "false") {
+				castOnBluestTask = "true"; 
+			} else {
+				castOnBluestTask = "false";
+			}
+			storeData("Bluest Task", castOnBluestTask); 
 			
 		threshold = parseInt(storeData('Hard Mode')); // typeop(threshold) = number 
 		if (threshold <= 9 && threshold >= 1) {
@@ -492,8 +501,46 @@ function storageFirstLoad() {
 	storageFirstLoad();
 	werewolf();
 	
+	function getTasks(){
+		for (var i in tasksFromDb){
+			//exclude challengedata:
+			if (jQuery.isEmptyObject(tasksFromDb[i].challenge)) {
+				$('#selectTask').append($('<option>', {
+					//style: "overflow: hidden;", 
+					value: tasksFromDb[i].id, 
+					text: tasksFromDb[i].text.slice(0, 35) + ' (val: ' + Math.round(tasksFromDb[i].value) + ')'
+				}) 
+				)
+			}
+		} // end for var i
+	} // end function getTasks
 	
-	function evaluateTasks() {
+	function displayTasks() {
+		if (user.stats.class == 'wizard' || user.stats.class == 'warrior') {
+			$('.bluestTask').show();  // checkbox "Cast Skill on bluest task"
+			$('.skillOnTask').show(); // Textfield displayed underneath the skill-button on:...
+			if (castOnBluestTask == 'true') {
+				getBluestTask();
+				$('.skillOnTask').html('on ' + skills[user.stats.class].field2.task)
+				$('#selectTask').hide();  // dropdown select options
+			    $('.taskSelector').hide();// 6th flexbox to display the dropdown select option
+			} else {
+				skills[user.stats.class].field2.task = $('#selectTask option:selected').text();
+				skills[user.stats.class].field2.taskId = $('#selectTask option:selected').val(); 
+				$('.skillOnTask').html('on ' + skills[user.stats.class].field2.task);		
+				$('#selectTask').show();  // dropdown select options
+			    $('.taskSelector').show();// 6th flexbox to display the dropdown select option
+			}
+		} else { 
+			getBluestTask(); 
+			$('.skillOnTask').html();
+			$('.bluestTask').hide();
+			$('.skillOnTask').show(); 
+			$('.taskSelector').hide(); 
+		}
+	}
+	
+	function getBluestTask() {
 		// get bluest Task for (Burst of Flames(Mage))   // challenge {}: Skill can only be cast on non-challenge tasks, but on habits, dailies and todos
 		var bluestTaskId = ""; 
 		var bluestTaskValue = 0;
@@ -536,7 +583,7 @@ function storageFirstLoad() {
 		}; // end for
 		dailyCompleted += user.stats.buffs.stealth; // Rouges can go stealth and imitate dalies as done
 		if (dailyCompleted > dailyTotal) {dailyCompleted = dailyTotal;} 
-	}; // end of function evaluateTasks;
+	}; // end of function getBluestTask;
 	
 	function getMaxGear() {
 		var maxInt = {"head" : 0, "armor": 0, "weapon": 0, "shield" : 0, "headAccessory": 0, "back": 0, "body": 0, "eyewear": 0};
@@ -726,23 +773,23 @@ function storageFirstLoad() {
 			}
 		}
 		
-							
-		addWardrobesToSkills();
-		getEquippedWardrobes();
-	
-} // end of getMaxGear
- 	
-function addWardrobesToSkills() {
-	var field = ["field1", "field2", "field3", "field4"];
-	field.forEach(function(item, value){
+		// write skills to wardrobe variable
+		var field = ["field1", "field2", "field3", "field4"];
+		field.forEach(function(item, value){
 		var s = skills[user.stats.class][item].nameOfWardrobe;
 			if (s == 'Intelligence') {skills[user.stats.class][item].wardrobe = intelligence} 
 			if (s == 'Perception') {skills[user.stats.class][item].wardrobe = perception} 
 			if (s == 'Strength') {skills[user.stats.class][item].wardrobe = strength} 
 			if (s == 'Blessing') {skills[user.stats.class][item].wardrobe = blessing} 
 			if (s == 'Constitution') {skills[user.stats.class][item].wardrobe = constitution} 
-	}); // end field.forEach
-}	// end function addWardrobesToSkills
+		}); // end field.forEach
+							
+		getEquippedWardrobes();
+	
+} // end of getMaxGear
+
+
+
 	
 function getEquippedWardrobes() {	
 		// get array with all wardrobes currently equipped 
@@ -1046,7 +1093,10 @@ function calculateAttributes(wardrobe) {
 //// calculate and display Skills, Wardrobes and stats
 //////////////////////////////	
 ///////////push in skills container 
-evaluateTasks(); 
+
+
+
+getBluestTask(); 
 htmlStats =		'<div class="skills-Container">'; //needs class for toggling between Wardrobes and Skills FrontEnds
 htmlStats +=		'<div id="skill1"><br>'+ 
 				'<button type="button" id="castSkill1" style="color: #2995cd"> Cast ' + skills[user.stats.class].field1.name + '</button>'+
@@ -1061,11 +1111,10 @@ htmlStats +=		'<div id="skill1"><br>'+
 				'<br>'+
 				'</div>'+
 				'<div id="skill2"><br>'+
-				'<button type="button" id="castSkill2" style="color: #2995cd"> Cast ' + skills[user.stats.class].field2.name + '</button>';
-				if (user.stats.class == 'wizard') {htmlStats += '<br>on ' + skills.wizard.field2.task};
-				if (user.stats.class == 'warrior') {	htmlStats += '<br>on ' + skills.warrior.field2.task};
-htmlStats +=		'<br><br>'+
-				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'<button type="button" id="castSkill2" style="color: #2995cd"> Cast ' + skills[user.stats.class].field2.name + '</button>'+
+				'<p class="skillOnTask"></p>'; 
+				
+htmlStats +=	'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
 				'cost of buff: ' + skills[user.stats.class].field2.cost + '<br>' +
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field2.cost) + '<br>' +
 				'<br>' + 
@@ -1103,13 +1152,20 @@ htmlStats += 	'<br><br>'+
 				'<br>'+
 				'</div>';
 	 			
-	htmlStats += '<div>Return to Wardrobe Intelligence: ';
+htmlStats += 	'<div>Return to Wardrobe Intelligence: ';
 				rememberGear == "true" ? htmlStats += '<input type="checkbox" id="rememberGear" checked="checked"/>' : htmlStats += '<input type="checkbox" id="rememberGear" />';  
+				
+htmlStats += 	'<div class="bluestTask">Cast Skill on bluest task:'; 
+				castOnBluestTask == "true" ? htmlStats += '<input type="checkbox" id="castOnBluestTask" checked="checked"/>' : htmlStats += '<input type="checkbox" id="castOnBluestTask" />'; 
+				htmlStats += '</div>'; 
+				// show + hide class "bluestTask" and "taskSelector" on document.ready						
 				htmlStats += '<div class="avatar"></div>' +
 				// display Avatar later because getMaxGear() has not jet finished!
 				'</div>';
+				// loop through tasks and fill "select options" with all possible options
+htmlStats +=	'<div class="taskSelector">Choose task for your skill:<br><select style="width: 250px !important; max-width: 250px; overflow: hidden;" id="selectTask" ></select></div>'; 
 				 
-	htmlStats += '</div>'; //end div skills-Container 
+htmlStats += '</div>'; //end div skills-Container 
 	
 	
 //////////end push in skills container
@@ -1560,7 +1616,7 @@ async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
   	amount = 20; 
 	alert("The number of skills to be cast is reduced to 20 \n The field value is set back to 1 \n Please do not overload the Habitica Server"); 
   }	
-  if (user.stats.class == 'wizard' && field == 'field2') {url += '?targetId=' + skills.wizard[field].taskId;}
+  if (user.stats.class == 'wizard' && field == 'field2') {url += '?targetId=' + skills.wizard[field].taskId; console.log(skills.wizard.field2.taskId);}
   if (user.stats.class == 'warrior'&& field == 'field2') {url += '?targetId=' + skills.warrior[field].taskId;}
   if (user.stats.class == 'rogue' && (field == 'field3' || field == 'field4')) {url += '?targetId=' + skills.rogue[field].taskId;}  
   for (var i = 1; i <= amount; i++) {
@@ -2168,6 +2224,11 @@ async function abortFunction() {
 		} else {
 			$('#werewolf').hide();
 		}
+		
+		// display tasks on which a skill can be cast
+		getTasks(); 
+		displayTasks(); 
+		 
 	});
 	
 	
@@ -2199,7 +2260,6 @@ async function abortFunction() {
 			//if you click on anything except the modal itself or the "open modal" link, close the modal
  			if ($(event.target).closest("#modalDataContent, #TAS, #HCT, #USR, #SKL, #DGR, #PAR").length == 0) {
 				$('#modalData').hide();
-				$('#modalPary').hide();
 			}
 			if ($(event.target).closest('#modalHelpContent, #HLP').length == 0) {
 				$('#modalHelp').hide();
@@ -2221,7 +2281,6 @@ async function abortFunction() {
 				$('#modalVersion').hide();
 				$('#modalHelp').hide();
 				$('#modalCronHelper').hide();
-				$('#modalParty').hide();
 				}	
 	 });
 	 $('#HCT').click(function(){
@@ -2387,7 +2446,6 @@ async function abortFunction() {
 				  skills[user.stats.class].field1.wardrobe,
 				  skills[user.stats.class].field1.nameOfWardrobe, 
 				  'field1');	
-		*/
 		})		
 	$('#castSkill2').click(function () {
 		if (document.querySelector('#amount2').value > 20) {
@@ -2471,6 +2529,19 @@ async function abortFunction() {
 		abort = true;
 		abortFunction(); 
 		})
+	$('#castOnBluestTask').click(function(){
+		castOnBluestTask = JSON.stringify($('#castOnBluestTask').is(':checked'));
+		storeData("Bluest Task", castOnBluestTask); 
+		displayTasks();
+		console.log(castOnBluestTask); 
+	})
+	$('#selectTask').on('change', function(){
+		skills[user.stats.class].field2.task = $('#selectTask option:selected').text();
+		skills[user.stats.class].field2.taskId = $('#selectTask option:selected').val(); 
+		$('.skillOnTask').html('on ' + skills[user.stats.class].field2.task);
+		console.log(skills[user.stats.class].field2.taskId); 
+		displayTasks(); 
+		}); 
 
 	
     //////////////////////////////////////////////////////////////////////
@@ -3265,6 +3336,8 @@ td, th {
 				<div class="dataSectionFix">
 					<h3>Version Info:</h3><br><br>
 			    	<ol style="list-style-position: outside;"> 
+					<h4>Version 2.5</h4><br>
+						Warriors and Mages can select to either cast Brutal Smash or Burst of Flames on their bluest task or any other task. 
 					<h4>Version 2.4</h4><br>
 						Improvement of Werewolf-equipper. Hair and Wheelchair do not disturb anymore. 
 					<h4>Version 2.3</h4><br>
@@ -3390,7 +3463,7 @@ td, th {
 
 	<div id="innerBody">
 		<h1>Habitican Wardrobes<br>
-			<span>(v 2.3 February 2020)</span>
+			<span>(v 2.5 April 2020)</span>
 		</h1>
 		<div id="headerExtras"></div>
 		<hr class="clear" />
