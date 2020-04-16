@@ -1106,7 +1106,7 @@ htmlStats +=		'<div id="skill1"><br>'+
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field1.cost) + '<br>' +
 				'<br>' + 
 				'<button type="button" id="sub1" class="sub">-</button>'+
-    			'<input type="number" id="amount1" value="1" class="number">'+
+    			'<input type="textfield" id="amount1" value="1" class="number" min="1" max="20">'+
     			'<button type="button" id="add1" class="add">+</button><br>'+
 				'<br>'+
 				'</div>'+
@@ -1119,7 +1119,7 @@ htmlStats +=	'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' +
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field2.cost) + '<br>' +
 				'<br>' + 
 				'<button type="button" id="sub2" class="sub">-</button>'+
-    			'<input type="number" id="amount2" value="1" class="number">'+
+    			'<input type="textfield" id="amount2" value="1" class="number" min="1" max="20">'+
 				'<button type="button" id="add2" class="add">+</button>'+
 				'<br>'+ 
 				'</div>'+
@@ -1133,7 +1133,7 @@ htmlStats += 	'<br><br>'+
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field3.cost) + '<br>' +
 				'<br>' + 
 				'<button type="button" id="sub3" class="sub">-</button>'+
-    			'<input type="number" id="amount3" value="1" class="number">'+
+    			'<input type="textfield" id="amount3" value="1" class="number" min="1" max="20">'+
     			'<button type="button" id="add3" class="add">+</button>'+
 				'<br>'+
 				'</div>'+
@@ -1147,7 +1147,7 @@ htmlStats += 	'<br><br>'+
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field4.cost) + '<br>' +
 				'<br>' + 
 				'<button type="button" id="sub4" class="sub">-</button>'+
-    			'<input type="number" id="amount4" value="1" class="number" />'+
+    			'<input type="textfield" id="amount4" value="1" class="number min="1" max="20" />'+
     			'<button type="button" id="add4" class="add">+</button>'+
 				'<br>'+
 				'</div>';
@@ -2855,7 +2855,11 @@ quantity buttons
 ***************/
 .number {
 	width: 20px; 
+	text-align: center;  
 }
+	 
+	
+
 /**********************************************************************
 ****** Modal **********************************************************
 **********************************************************************/
