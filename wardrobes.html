@@ -1229,7 +1229,7 @@ htmlStats += '</div>'; //end div skills-Container
 	
 	htmlStats += '<div class="wardrobes-Container">'; 
 	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var 
-	
+	console.log(JSON.stringify(copyGear, null, 4));  
 	
 	//start flexbox 1
 	// initialGear: 
@@ -1237,13 +1237,15 @@ htmlStats += '</div>'; //end div skills-Container
 	calculateAttributes(copyGear); // continue with content of flexbox 1 there
 	htmlStats +='<br>'; 
 		["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element){
-			if (copyGear[element] != 'undefined' && copyGear[element] != ''  && typeof wardrobeEquippedObject[element] != 'undefined') {
+			console.log("trying: " + element + " with " + copyGear[element] + " equipped (var 1 is Element, var 2 is copyGear[element]");
+			if (copyGear[element] != 'undefined' && copyGear.hasOwnProperty(element) && copyGear[element] != ''  && typeof wardrobeEquippedObject[element] != 'undefined') {
 				if (copyGear[element] != (element + '_base_0')) { 
+					console.log(element + " // " + JSON.stringify(copyGear[element]) + " // " + content.gear.flat[copyGear[element]].text);
 					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' + 
   						'<p class="description">' + content.gear.flat[copyGear[element]].text +
 						'<br>INT: ' + content.gear.flat[copyGear[element]].int + ' PER: ' + content.gear.flat[copyGear[element]].per +
 						'<br>STR: ' + content.gear.flat[copyGear[element]].str + ' CON: ' + content.gear.flat[copyGear[element]].con + '</p>' ;
-				}
+				} else {console.log(element + " has empty gear slot"); }
 			} else {
 				console.log("no gear: " + element); 
 				htmlStats += '<a class="wrap" style="width: 68px; height: 68px; opacity: 0;"><img src="https://abbhh.de/Images/68x68.png"</a>'; 
