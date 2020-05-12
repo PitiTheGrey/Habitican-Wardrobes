@@ -26,7 +26,7 @@ var userID     = '';
 var apiToken   = '';
 var url = '';
 var allowWerewolf = false;
-var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"}; 
+var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"};
 var costume = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"};
 var preferences = {"hair": {"base": 0}, "chair": "none"};
 var blessing = {};
@@ -35,7 +35,7 @@ var perception = {};
 var constitution = {};
 var strength = {};
 var initialGear = {};
-var amountOfSkill = 0; 
+var amountOfSkill = 0;
 var rememberGear = "true"; // use string (required by localStorage)
 var castOnBluestTask = "true"; // use string (required by localStorage) 
 var threshold = 3;
@@ -46,142 +46,141 @@ var cronHelperWardrobeForTasks = 'disabled';
 var cronHelperWardrobeForCron = 'disabled';
 var wardrobeEquipped = ['Initial'];
 var wardrobeEquippedObject = {"head":"", "armor":"", "weapon":"", "shield":"", "back":"", "body":"", "eyewear":"", "headAccessory":""}; // e.g. {"head":"head_special_2", ...} for use of intelligence, perception ...
-var avatar = ''; 
-var userName = '';
-var equipCount = 0;
-var equipCountSkip = 0;
-var nameOfWardrobe = 'perception'; 
-var werewolf = false; 	
+var slots = ['back', 'body', 'head', 'armor', 'weapon', 'shield', 'headAccessory', 'eyewear'];
+var stats = ['int', 'per', 'str', 'con'];
+var avatar = '';
+var nameOfWardrobe = 'perception';
+var werewolf = false;
 var skills = {"rogue": {
 				"field1": {
-					"name": "Tools of the Trade", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/toolsOfTrade",
-                    "cost": 25, 
+					"name": "Tools of the Trade",
+                    "API": serverUrl + '/user/class/cast/toolsOfTrade',
+                    "cost": 25,
 					"nameOfWardrobe": "Perception",
-					"unlock": 13,  
+					"unlock": 13,
 					"wardrobe": "perception"   // will be replaced by wardrobe-object
 					},
 				"field2": {
-					"name": "Stealth", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/stealth",
-                    "cost": 45, 
+					"name": "Stealth",
+                    "API": serverUrl + '/user/class/cast/stealth',
+                    "cost": 45,
 					"nameOfWardrobe": "Perception",
 					"unlock": 14,
 					"wardrobe": "perception" },
 				"field3": {
-					"name": "Pickpocket", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/pickPocket",
-                    "cost": 10, 
+					"name": "Pickpocket",
+                    "API": serverUrl + '/user/class/cast/pickPocket',
+                    "cost": 10,
 					"nameOfWardrobe": "Perception",
 					"wardrobe": "perception",
-					"unlock": 11, 
+					"unlock": 11,
 					"task": "pending",  // will be replaced by getBluestTask();
 					"taskId": "pending"},
 				"field4": {
-					"name": "Backstab", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/backStab",
-                    "cost": 15, 
+					"name": "Backstab",
+                    "API": serverUrl + '/user/class/cast/backStab',
+                    "cost": 15,
 					"nameOfWardrobe": "Strength",
 					"wardrobe": "strength",
-					"unlock": 12, 
+					"unlock": 12,
 					"task": "pending",
-					"taskId": "pending" }	
+					"taskId": "pending" }
 				},
 			  "wizard": {
 				"field1": {
 					"name": "Earthquake", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/earth",
-                    "cost": 35, 
+                    "API": serverUrl + '/user/class/cast/earth',
+                    "cost": 35,
 					"nameOfWardrobe": "Intelligence",
-					"unlock": 13, 
+					"unlock": 13,
 					"wardrobe": "intelligence" },
 				"field2": {
-					"name": "Burst of Flames", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/fireball",
-                    "cost": 10, 
+					"name": "Burst of Flames",
+                    "API": serverUrl + '/user/class/cast/fireball',
+                    "cost": 10,
 					"nameOfWardrobe": "Intelligence",
 					"wardrobe": "intelligence",
-					"unlock": 11, 
+					"unlock": 11,
 					"task": "pending",
-					"taskId": "pending" 
+					"taskId": "pending"
 					},
 				"field3": {
 					"name": "Ethereal Surge", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/mpheal",
-                    "cost": 30, 
+                    "API": serverUrl + '/user/class/cast/mpheal',
+                    "cost": 30,
 					"nameOfWardrobe": "Intelligence",
-					"unlock": 12, 
+					"unlock": 12,
 					"wardrobe": "intelligence"
 					},
 				"field4": {
-					"name": "Chilling Frost", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/frost",
-                    "cost": 40, 
+					"name": "Chilling Frost",
+                    "API": serverUrl + '/user/class/cast/frost',
+                    "cost": 40,
 					"nameOfWardrobe": "Intelligence",
-					"unlock": 14, 
-					"wardrobe": "intelligence" }	
-				}, 
+					"unlock": 14,
+					"wardrobe": "intelligence" }
+				},
 			  "warrior": {
 				"field1": {
-					"name": "Valorous Presence", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/valorousPresence",
-                    "cost": 20, 
+					"name": "Valorous Presence",
+                    "API": serverUrl + '/user/class/cast/valorousPresence',
+                    "cost": 20,
 					"nameOfWardrobe": "Strength",
-					"unlock": 13, 
+					"unlock": 13,
 					"wardrobe": "strength" },
 				"field2": {
-					"name": "Brutal Smash", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/smash",
-                    "cost": 10, 
+					"name": "Brutal Smash",
+                    "API": serverUrl + '/user/class/cast/smash',
+                    "cost": 10,
 					"nameOfWardrobe": "Strength",
 					"wardrobe": "strength",
-					"unlock": 11, 
+					"unlock": 11,
 					"task": "pending",
 					"taskId": "pending" },
 				"field3": {
-					"name": "Intimidating Gaze", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/intimidate",
-                    "cost": 15, 
+					"name": "Intimidating Gaze",
+                    "API": serverUrl + '/user/class/cast/intimidate',
+                    "cost": 15,
 					"nameOfWardrobe": "Constitution",
-					"unlock": 14, 
+					"unlock": 14,
 					"wardrobe": "constitution" },
 				"field4": {
 					"name": "Defensive Stance", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/defensiveStance",
-                    "cost": 25, 
+                    "API": serverUrl + '/user/class/cast/defensiveStance',
+                    "cost": 25,
 					"nameOfWardrobe": "Constitution",
-					"unlock": 12, 
-					"wardrobe": "constitution" }	
+					"unlock": 12,
+					"wardrobe": "constitution" }
 				},
 			  "healer": {
 				"field1": {
-					"name": "Protective Aura", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/protectAura",
-                    "cost": 15, 
+					"name": "Protective Aura",
+                    "API": serverUrl + '/user/class/cast/protectAura',
+                    "cost": 15,
 					"nameOfWardrobe": "Blessing",
-					"unlock": 13, 
+					"unlock": 13,
 					"wardrobe": "blessing" },
 				"field2": {
-					"name": "Searing Brightness", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/brightness",
-                    "cost": 15, 
+					"name": "Searing Brightness",
+                    "API": serverUrl + '/user/class/cast/brightness',
+                    "cost": 15,
 					"nameOfWardrobe": "Constitution",
-					"unlock": 12, 
+					"unlock": 12,
 					"wardrobe": "constitution" },
 				"field3": {
-					"name": "Blessing", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/healAll",
-                    "cost": 25, 
+					"name": "Blessing",
+                    "API": serverUrl + '/v3/user/class/cast/healAll',
+                    "cost": 25,
 					"nameOfWardrobe": "Blessing",
-					"unlock": 14, 
+					"unlock": 14,
 					"wardrobe": "blessing" },
 				"field4": {
-					"name": "Healing Light", 
-                    "API": "https://habitica.com/api/v3/user/class/cast/heal",
-                    "cost": 15, 
+					"name": "Healing Light",
+                    "API": serverUrl + '/user/class/cast/heal',
+                    "cost": 15,
 					"nameOfWardrobe": "Blessing",
-					"unlock": 11, 
-					"wardrobe": "blessing" }	
+					"unlock": 11,
+					"wardrobe": "blessing" }
 				}
 			};		//end skill...
 
@@ -412,43 +411,47 @@ function storageFirstLoad() {
 		if (frontEnd == 'skills') {
 			$('.wardrobes-Container').hide();
 			}
+
+	forceAetherAmuletAndComicalArrow = storeData("Amulet and Arrow");
+      if (forceAetherAmuletAndComicalArrow === 'true') {
+        $("#forceAetherAmuletAndComicalArrow").prop('checked', true);
+      }
+      
+      if (forceAetherAmuletAndComicalArrow == null) {
+		forceAetherAmuletAndComicalArrow = "true";
+		storeData("Amulet and Arrow", "true");
+		$('#forceAetherAmuletAndComicalArrow').prop('checked', true);
+      }
+
+	allowWerewolf = storeData("Werewolf");
+		if (allowWerewolf == 'true') {
+			$('#allowWerewolf').prop('checked', true);
+			$('#werewolf').show();
+			storeData('Werewolf', 'true');
+		} else {
+			$('#allowWerewolf').prop('checked', false); 
+			$('#werewolf').hide();
+			storeData('Werewolf', 'false');
+			allowWerewolf = false;
+		}
+
+	rememberGear = storeData("Remember Gear");
+		if (rememberGear != "false") 
+			{$('#rememberGear').prop('checked', true); rememberGear = "true";} 
+		else {
+			{$('#rememberGear').prop('checked', false); rememberGear = "false";}
+		}
+		storeData("Remember Gear", rememberGear);
+
+	castOnBluestTask = storeData("Bluest Task");
+		if (castOnBluestTask != "false") {
+			castOnBluestTask = "true"; 
+		} else {
+			castOnBluestTask = "false";
+		}
+		storeData("Bluest Task", castOnBluestTask);
 			
-		forceAetherAmuletAndComicalArrow = storeData("Amulet and Arrow");
-			if (forceAetherAmuletAndComicalArrow == "true") {$("#forceAetherAmuletAndComicalArrow").prop('checked', true);}
-			if (forceAetherAmuletAndComicalArrow == null) {
-				forceAetherAmuletAndComicalArrow = "true";
-				storeData("Amulet and Arrow", "true");
-				$('#forceAetherAmuletAndComicalArrow').prop('checked', true);
-			}
-		allowWerewolf = storeData("Werewolf");
-			if (allowWerewolf == 'true') {
-				$('#allowWerewolf').prop('checked', true);
-				$('#werewolf').show();
-				storeData('Werewolf', 'true');
-			} else {
-				$('#allowWerewolf').prop('checked', false); 
-				$('#werewolf').hide();
-				storeData('Werewolf', 'false');
-				allowWerewolf = false;
-			}
-				
-		rememberGear = storeData("Remember Gear");
-			if (rememberGear != "false") 
-				{$('#rememberGear').prop('checked', true); rememberGear = "true";} 
-			else {
-				{$('#rememberGear').prop('checked', false); rememberGear = "false";}
-			}
-			storeData("Remember Gear", rememberGear);
-			
-		castOnBluestTask = storeData("Bluest Task");
-			if (castOnBluestTask != "false") {
-				castOnBluestTask = "true"; 
-			} else {
-				castOnBluestTask = "false";
-			}
-			storeData("Bluest Task", castOnBluestTask);
-			
-		threshold = parseInt(storeData('Hard Mode')); // typeop(threshold) = number 
+	threshold = parseInt(storeData('Hard Mode')); // typeop(threshold) = number 
 		if (threshold <= 9 && threshold >= 1) {
 			$('#threshold').prop('value', threshold);
 		} else {
@@ -456,7 +459,7 @@ function storageFirstLoad() {
 			$('#threshold').prop('value', threshold);
 			storeData('Hard Mode', JSON.stringify(threshold));
 		}
-		alternativeAttribute = storeData('Alt. Attribute'); //typeof(alternativeAttribute) = string
+	alternativeAttribute = storeData('Alt. Attribute'); //typeof(alternativeAttribute) = string
 		if (alternativeAttribute != null) {
 			$('#alternativeAttribute').prop('value', alternativeAttribute);
 		} else {
@@ -465,7 +468,7 @@ function storageFirstLoad() {
 			storeData('Alt. Attribute', alternativeAttribute);
 		} 
 		
-		cronHelperWardrobeForTasks = storeData('Tasks'); 
+	cronHelperWardrobeForTasks = storeData('Tasks'); 
 		if (cronHelperWardrobeForTasks != null) {
 			$('#cronHelperWardrobeForTasks').prop('value', cronHelperWardrobeForTasks);
 		} else {
@@ -474,7 +477,7 @@ function storageFirstLoad() {
 			storeData('Tasks', cronHelperWardrobeForTasks);
 		}
 		
-		cronHelperWardrobeForCron = storeData('Cron'); 
+	cronHelperWardrobeForCron = storeData('Cron'); 
 		if (cronHelperWardrobeForCron != null) {
 			$('#cronHelperWardrobeForCron').prop('value', cronHelperWardrobeForCron);
 		} else {
@@ -482,9 +485,9 @@ function storageFirstLoad() {
 			$('#cronHelperWardrobeForCron').prop('value', cronHelperWardrobeForCron);
 			storeData('Cron', cronHelperWardrobeForCron);
 		}
-		var isCostume = storeData('Costume');
-		if (isCostume == null) {
-			['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'].forEach(function(element){
+	var isCostume = storeData('Costume');
+    	if (isCostume == null) {
+			slots.forEach(function(element){
 				costume[element] = user.items.gear.costume[element];
 			})  
 			storeData('Costume', JSON.stringify(costume));
@@ -495,8 +498,7 @@ function storageFirstLoad() {
 			preferences.hair.base = user.preferences.hair.base; 
 			storeData('Preferences', JSON.stringify(preferences));
 		}
-		
-	
+
 	} // end of funciton storageFirstLoad
 	storageFirstLoad();
 	werewolf();
@@ -596,7 +598,7 @@ function storageFirstLoad() {
 
 		//prefill all wardrobes with the current equipment
 		[intelligence, perception, strength, constitution, blessing, legendary, initialGear].forEach(function(container){
-			['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'].forEach(function(element){
+			slots.forEach(function(element){
 				container[element] = user.items.gear.equipped[element];  
 			})
 		})
@@ -617,7 +619,7 @@ function storageFirstLoad() {
 						
 			if (key.twoHanded != true && user.items.gear.owned[item] != false) {
 				
-				['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'].forEach(function(element){
+				slots.forEach(function(element){
 				// INT
 					if ( 	factor * key.int > maxInt[element] &&
 							key.int > 0 &&
@@ -662,18 +664,18 @@ function storageFirstLoad() {
 						maxBles[element] = (factor * (key.con + key.int));
 						} // end if
 				}) // end forEach
-			} // end if twohanded	
+			} // end if twohanded
 		} // end for var Item in user.items.gear.owned = end first run
 		
 		//second run: checking if there is a two-handed weapon more valueable than single handed weapon + shield
 		//content.gear.flat["weapon_wizard_6"].int = 35; // corrupting one entry for testing purpose and set its INT higher as 32 so it will be chosen... delete if works
-		var weaponPoints = 0; 
-		var shieldPoints = 0; 
+		var weaponPoints = 0;
+		var shieldPoints = 0;
 		var twoHandedPoints = 0;
-			
+
 		//INT       
-		if ('weapon' in intelligence) { 
-			(content.gear.flat[intelligence.weapon].klass == user.stats.class || 
+		if ('weapon' in intelligence) {
+			(content.gear.flat[intelligence.weapon].klass == user.stats.class ||
 			content.gear.flat[intelligence.weapon].specialClass == user.stats.class) ? factor = 1.5 : factor = 1;
 			weaponPoints = factor * content.gear.flat[intelligence.weapon].int;
 			}
@@ -681,47 +683,47 @@ function storageFirstLoad() {
 			(content.gear.flat[intelligence.shield].klass == user.stats.class ||
 			content.gear.flat[intelligence.shield].specialClass == user.stats.class) ? factor = 1.5 : factor = 1;  
 			shieldPoints = factor * content.gear.flat[intelligence.shield].int;
-			} 
-			
+			}
+
 		for (var item in user.items.gear.owned){ // check twoHanded
 			content.gear.flat[item].klass == user.stats.class ? factor = 1.5 : factor = 1;
-			twoHandedPoints = factor * content.gear.flat[item].int;	
-				
+			twoHandedPoints = factor * content.gear.flat[item].int;
+
 			if (content.gear.flat[item].twoHanded == true && twoHandedPoints > (weaponPoints + shieldPoints)) {
-				intelligence.weapon = item; 
-				delete intelligence.shield;  
-			} // end if 
+				intelligence.weapon = item;
+				delete intelligence.shield;
+			} // end if
 		} // end for var item in user.items.gear.ownded (check twoHanded)
-			
-		//PER         
-		if ('weapon' in perception) { 
+
+		//PER
+		if ('weapon' in perception) {
 			(content.gear.flat[perception.weapon].klass == user.stats.class ||
-			content.gear.flat[perception.weapon].specialClass == user.stats.class) ? factor = 1.5 : factor = 1; 
+			content.gear.flat[perception.weapon].specialClass == user.stats.class) ? factor = 1.5 : factor = 1;
 			weaponPoints = factor * content.gear.flat[perception.weapon].per;
 			}
 		if ('shield' in perception) {
-			(content.gear.flat[perception.shield].klass == user.stats.class || 
-			content.gear.flat[perception.shield].specialClass == user.stats.class) ? factor = 1.5 : factor = 1; 
+			(content.gear.flat[perception.shield].klass == user.stats.class ||
+			content.gear.flat[perception.shield].specialClass == user.stats.class) ? factor = 1.5 : factor = 1;
 			shieldPoints = factor * content.gear.flat[perception.shield].per;
-			} 
-				
-		for (var item in user.items.gear.owned){ // check twoHanded		 
+			}
+
+		for (var item in user.items.gear.owned){ // check twoHanded
 			content.gear.flat[item].klass == user.stats.class ? factor = 1.5 : factor = 1;
-			twoHandedPoints = factor * content.gear.flat[item].per;	
-				
+			twoHandedPoints = factor * content.gear.flat[item].per;
+
 			if (content.gear.flat[item].twoHanded == true && twoHandedPoints > (weaponPoints + shieldPoints)) {
-				perception.weapon = item; 
+				perception.weapon = item;
 				delete perception.shield;
-			} // end if 
+			} // end if
 		}	// end for var item in user.items.gear.owned
-		// end second run: for var item in user.items.gear.owned 
-	
+		// end second run: for var item in user.items.gear.owned
+
 		// third run - check for equipment with alternative attribute exceeding current equipment
-		
-		
-		
+
+
+
 		if (alternativeAttribute != 'none'){
-			var key = content.gear.flat; 	
+			var key = content.gear.flat;
 			for (var item in user.items.gear.owned){
 				[intelligence, perception, strength, constitution, blessing, legendary].forEach(function(wardrobe){
 					['headAccessory', 'back', 'body', 'eyewear'].forEach(function(element){
@@ -733,12 +735,12 @@ function storageFirstLoad() {
 								if (wardrobe == strength && key[wardrobe[element]].str < threshold) { furtherChecking() }
 								if (wardrobe == constitution && key[wardrobe[element]].con < threshold) { furtherChecking() }
 								if (wardrobe == blessing && key[wardrobe[element]].bles < threshold) { furtherChecking() }
-							} // end if							
+							} // end if
 								function furtherChecking() {
 								if (key[item][alternativeAttribute] >= threshold && // strong alternative item
 									key[wardrobe[element]][attribute] <= threshold &&  // weak element in wardorbe
 									key[item][alternativeAttribute] >= key[wardrobe[element]][alternativeAttribute]) { // better alternative than wardrobes alternative
-																		
+
 											wardrobe[element] = item;
 							 				//console.log('Alternative Equipment: ' + key[item].key);
 								}
@@ -750,16 +752,16 @@ function storageFirstLoad() {
 				}) // end loop wardrobe 
 			} // end of third for var item in user.items.gear.owned
 		} // end if alternativeAttribute != 'none'
-		
-		
+
+
 		// force Aether Amulet and Comical Arrow
-		forceAetherAmuletAndComicalArrow = storeData("Amulet and Arrow"); 
+		forceAetherAmuletAndComicalArrow = storeData("Amulet and Arrow");
 		if (forceAetherAmuletAndComicalArrow == "true") {
 			$("#forceAetherAmuletAndComicalArrow").prop('checked', true);
 			if (user.items.gear.owned.headAccessory_armoire_comicalArrow == true) {
 				[intelligence, strength, constitution, blessing, legendary].forEach(function(wardrobe){
-					wardrobe.headAccessory = 'headAccessory_armoire_comicalArrow'; 
-				})	
+					wardrobe.headAccessory = 'headAccessory_armoire_comicalArrow';
+				})
 			}
 			if (user.items.gear.owned.body_special_aetherAmulet == true) {
 				[intelligence, strength, constitution, blessing, legendary].forEach(function(wardrobe){
@@ -767,16 +769,16 @@ function storageFirstLoad() {
 				})
 			}
 		}
-		
+
 		// write skills to wardrobe variable
 		var field = ["field1", "field2", "field3", "field4"];
 		field.forEach(function(item, value){
 		var s = skills[user.stats.class][item].nameOfWardrobe;
-			if (s == 'Intelligence') {skills[user.stats.class][item].wardrobe = intelligence} 
-			if (s == 'Perception') {skills[user.stats.class][item].wardrobe = perception} 
-			if (s == 'Strength') {skills[user.stats.class][item].wardrobe = strength} 
-			if (s == 'Blessing') {skills[user.stats.class][item].wardrobe = blessing} 
-			if (s == 'Constitution') {skills[user.stats.class][item].wardrobe = constitution} 
+			if (s == 'Intelligence') {skills[user.stats.class][item].wardrobe = intelligence}
+			if (s == 'Perception') {skills[user.stats.class][item].wardrobe = perception}
+			if (s == 'Strength') {skills[user.stats.class][item].wardrobe = strength}
+			if (s == 'Blessing') {skills[user.stats.class][item].wardrobe = blessing}
+			if (s == 'Constitution') {skills[user.stats.class][item].wardrobe = constitution}
 		}); // end field.forEach
 
 		getEquippedWardrobes();
@@ -800,9 +802,10 @@ function getEquippedWardrobes() {
 
   function wardrobeIs(wardrobeToCompare){ //checks if the currently equipped gear is equal to one of the wardrobes
     var equipped = true;
-      ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element) {
+      slots.forEach(function(element) {
         if (wardrobeToCompare[element] == user.items.gear.equipped[element]) {
           wardrobeEquippedObject[element] = wardrobeToCompare[element];
+          initialGear[element] = wardrobeToCompare[element];
         } else {
           equipped = false;
         }
@@ -860,13 +863,13 @@ function calculateAttributes(wardrobe) {
 		total[attr] = totalUnbuffed[attr] + user.stats.buffs[attr];
 		totalPerfectDay[attr] = totalUnbuffed[attr] + perfectDay;
 	});
-	
+
 		var manaRefreshPerfectDay 	  = (2 * totalPerfectDay.int + 30) / 10; // manaRefreshPerfectDay is based on 100% completion rate before cron including only Perfect Day buff
 		var manaRefreshCompletionRate = ((2 * totalUnbuffed.int + 30) / 10) * dailyCompleted / dailyTotal; // manaRefreshCompletionRate includes no buffs and is multipied with completion rate
 		var currentMana = user.stats.mp;
 		var manaMax = Math.round(2 * total.int + 30); // maximum mana points until cron = ( 2 * buffedINT + 30)
 		var habit = 0.0025 * manaMax;
-		var dailyToDo = 0.01 * manaMax; 
+		var dailyToDo = 0.01 * manaMax;
 		if (manaMax < 100) {habit = 0.25; dailyToDo = 1;}
 		var manaMaxAfterCronCompletionRate = Math.round(2 * totalUnbuffed.int + 30); // at cron on a non-Perfect Day, all buffs are reset to zero
 		var manaMaxAfterCronPerfectDay 	   = Math.round(2 * totalPerfectDay.int + 30)//;  + Math.round(level / 2); // at cron on a Perfect Day all buffs are reset to zero, except Perfect Day buff
@@ -874,10 +877,10 @@ function calculateAttributes(wardrobe) {
 		var manaAfterCronPerfectDay		   = Math.round(currentMana + manaRefreshPerfectDay); // before checking if manaMaxAfterCron is exceeded.
 		var manaCapCompletionRate = 0;
 		var manaCapPerfectDay = 0;
-		if (dailyCompleted == dailyTotal) { // fixes bug displaying mana max after cron without perfect day buff on the left column when all dailies are completed 
+		if (dailyCompleted == dailyTotal) { // fixes bug displaying mana max after cron without perfect day buff on the left column when all dailies are completed
 			manaMaxAfterCronCompletionRate = manaMaxAfterCronPerfectDay;
-			manaRefreshCompletionRate = manaRefreshPerfectDay; 
-			manaAfterCronCompletionRate = manaAfterCronPerfectDay; 
+			manaRefreshCompletionRate = manaRefreshPerfectDay;
+			manaAfterCronCompletionRate = manaAfterCronPerfectDay;
 		}
 		if (manaAfterCronCompletionRate >= manaMaxAfterCronCompletionRate) {
 			manaCapCompletionRate = manaAfterCronCompletionRate - manaMaxAfterCronCompletionRate;
@@ -888,23 +891,23 @@ function calculateAttributes(wardrobe) {
 		//rogue
 		function toolsOfTheTrade(unbuffedPer) {return Math.ceil(100 * unbuffedPer / (unbuffedPer + 50));}
 		var stealth = Math.ceil(0.64 * dailyTotalStealth * total.per / (total.per + 55));
-		var backstab = (mostValueableTaskValue + 1) +( 0.5 * total.str); 
-		var pickpocket =(100*(mostValueableTaskValue + 1 + (0.5 * total.per))) / 100;  
+		var backstab = (mostValueableTaskValue + 1) +( 0.5 * total.str);
+		var pickpocket =(100*(mostValueableTaskValue + 1 + (0.5 * total.per))) / 100;
 		//healer
 		var blessing = Math.round((total.int + total.con + 5) * 0.04);
 		var protectiveAura = Math.round((200 * totalUnbuffed.con) / (200 + totalUnbuffed.con));
-		var healingLight =  Math.ceil((total.con + total.int + 5) * 0.075); 
-		var searingBrightness = Math.round(4 * (total.int / (total.int + 40))); 
+		var healingLight =  Math.ceil((total.con + total.int + 5) * 0.075);
+		var searingBrightness = Math.round(4 * (total.int / (total.int + 40)));
 		//warrior
 		var brutalSmashTask = Math.round((2.5 * total.str / (total.str + 35)));
 		var brutalSmashDamage = Math.round(55 * total.str / (total.str + 70));
 		var valorousPresence = Math.ceil((20 * totalUnbuffed.str) / (200 + totalUnbuffed.str));
 		var defensiveStance = Math.ceil(40 * totalUnbuffed.con / (totalUnbuffed.con + 200));
-		var intimidatingGaze = Math.ceil(24 * totalUnbuffed.con / (totalUnbuffed.con + 200)); 
+		var intimidatingGaze = Math.ceil(24 * totalUnbuffed.con / (totalUnbuffed.con + 200));
 		 //mage
 		var earthquake = Math.ceil((30 * totalUnbuffed.int) / (200 + totalUnbuffed.int));
 		var burstOfFlames = (mostValueableTaskValue +1) * 0.075 * total.int;
-		var etherealSurge = Math.ceil((total.int * 25) / (total.int + 125)); 
+		var etherealSurge = Math.ceil((total.int * 25) / (total.int + 125));
 		htmlStats +='<section class="container">' +
 					'<div class="one"><section class="innerContainer"><div class="innerOne"><a style="color: #f74e52; vertical-align: middle">STR:</a><h3>' + total.str + '</h3></div>' +
 					'<div class="innerTwo"><a>Level: ' + level + '<br></a><a>Equipment: ' + equipment.str + '<br></a><a>Bonus: ' + bonus.str + '<br></a><a>Allocation: ' + user.stats.str + '<br></a><a>Buffs: ' + user.stats.buffs.str + '</a></div></section></div>' +
@@ -991,17 +994,17 @@ function calculateAttributes(wardrobe) {
 							
 						// start display Skills-section
 						htmlStats += '<a class="wrap">'; 
-						htmlStats += '<font size="-2">Tools of the Trade: +' + z +'PER<br>';	
+						htmlStats += '<font size="-2">Tools of the Trade: +' + z +'PER<br>';
 						//htmlStats += 'PER<sub>unb</sub>=' + totalUnbuffed.per + '&#8712;{' + low + ',..,' + high + '}<br>';
-						htmlStats += 'Stealth: ' + stealth + ' dailies<br>';  
-						var xp = Math.round(10 * 75*backstab / (backstab + 50)) / 10; 
+						htmlStats += 'Stealth: ' + stealth + ' dailies<br>';
+						var xp = Math.round(10 * 75*backstab / (backstab + 50)) / 10;
 						var goldBackstab = Math.round(100*18 * backstab / (backstab + 75)) / 100;
 						htmlStats += 'Backstab: ' + xp + 'XP+' + goldBackstab + 'GP<br>' ;
 						var goldPickpocket = Math.round(100 * 25 * pickpocket / (pickpocket + 75)) / 100;
 						htmlStats +='Pickpocket: ' + goldPickpocket + 'GP</font>';
 						// Tooltips
 						htmlStats += '<p class="descriptionSkills">Tools of the Trade: +' + z + ' PER.<br><font size ="-2">Based on unbuffed Per: (' + totalUnbuffed.per + ')<br>';
-						htmlStats += 'Unbuffed Per in range of ' + low + ' ... ' + high + ' will have same effect.</font><br><br>'; 
+						htmlStats += 'Unbuffed Per in range of ' + low + ' ... ' + high + ' will have same effect.</font><br><br>';
 						htmlStats += 'Stealth: <font size="-2"> you will avoid </font>' + stealth + '<font size ="-2"> dailies<br>based on Per: (' + total.per + ')</font><br><br>';
 						htmlStats += 'Backstab: +' + xp + ' XP +' + goldBackstab + ' GP<br><font size ="-2">Base on STR: (' + total.str + ')<br>';
 						htmlStats += 'and your task: ' + mostValueableTaskName + ' with a value of ' + (Math.round(mostValueableTaskValue)) + '</font><br><br>';
@@ -1011,67 +1014,67 @@ function calculateAttributes(wardrobe) {
 					//MAGE
 					if (user.stats.class == 'wizard') {
 						var x = totalUnbuffed.int;
-						var y = earthquake; 
-						var high = 0; 
+						var y = earthquake;
+						var high = 0;
 						var low = 0;
-						// Schleife nach unten  
+						// Schleife nach unten
 						while (y == earthquake) {
 							x--;
 							y  = Math.round((30 * x) / (200 + x));
 							}
-							low = x + 1; 
-						// Schleife nach oben  
+							low = x + 1;
+						// Schleife nach oben
 						var x = totalUnbuffed.int;
-						var y = earthquake; 
+						var y = earthquake;
 						while (y == earthquake) {
 							x++;
 							y  = Math.round((30 * x) / (200 + x));
 							}
-							high = x - 1; 
-						htmlStats += '<a class="wrap">'; 	
-						htmlStats += '<font size="-2">Earthquake: +' + earthquake + 'INT<br>';	
+							high = x - 1;
+						htmlStats += '<a class="wrap">';
+						htmlStats += '<font size="-2">Earthquake: +' + earthquake + 'INT<br>';
 						//htmlStats += 'INT<sub>unb</sub> = ' + totalUnbuffed.int  + '&#8712;{' + low + ',..,' + high + '}<br>';
-						htmlStats += 'Eth.Surge : +' + etherealSurge + 'MP<br>';  
+						htmlStats += 'Eth.Surge : +' + etherealSurge + 'MP<br>';
 						var xp = Math.round(75 * burstOfFlames / (burstOfFlames + 37.5));
 						htmlStats += 'BrstfFlms: ' + total.int / 10 + 'dmg, ' + xp + 'XP<br></font>';
-						// Tooltips 
+						// Tooltips
 						htmlStats += '<p class="descriptionSkills">Earthquake: +' + earthquake + ' INT.<br><font size ="-2">Based on unbuffed Int: (' + totalUnbuffed.int + ')<br>';
-						htmlStats += 'Unbuffed Int in range of ' + low + ' ... ' + high + ' will have same effect.</font><br><br>'; 
+						htmlStats += 'Unbuffed Int in range of ' + low + ' ... ' + high + ' will have same effect.</font><br><br>';
 						htmlStats += 'Ethereal Surge: +' + etherealSurge + 'MP <font size ="-2">for non Mages<br>based on Int: (' + total.int + ')</font><br><br>';
 						htmlStats += 'Burst of Flames: +' + (Math.ceil(total.int / 10)) + 'DMG +' + xp + 'XP<br><font size ="-2">Base on Int: (' + total.int + ')<br></font>';
 						htmlStats += '</p></a>';
 						}
-					
-					// HEALER	
+
+					// HEALER
 					if (user.stats.class == 'healer') {
 						htmlStats += '<font sitze ="-2">Healing Light: +' + healingLight + 'HP <br>';
-						htmlStats += 'Sear.Brightness: ' + searingBrightness + '<br>'; 
+						htmlStats += 'Sear.Brightness: ' + searingBrightness + '<br>';
 						htmlStats += 'Protective Aura: +' + protectiveAura + 'CON<br>';
 						htmlStats += 'Blessing: +' + blessing + 'HP</font>';
 						}
 					//WARRIOR
 					if (user.stats.class == 'warrior') {
-						htmlStats += '<font size="-2">BrtSmsh: ' + brutalSmashTask + 'TskVal, +' + brutalSmashDamage + 'dmg<br>'; 
-						htmlStats += 'DefStance: +' + defensiveStance + 'CON<sub>You</sub><br>'; 
+						htmlStats += '<font size="-2">BrtSmsh: ' + brutalSmashTask + 'TskVal, +' + brutalSmashDamage + 'dmg<br>';
+						htmlStats += 'DefStance: +' + defensiveStance + 'CON<sub>You</sub><br>';
 						var x = totalUnbuffed.str;
-						var y = valorousPresence; 
-						var high = 0; 
+						var y = valorousPresence;
+						var high = 0;
 						var low = 0;
-						// Schleife nach unten  
+						// Schleife nach unten
 						while (y == valorousPresence) {
 							x--;
 							y  = Math.round((20 * x) / (200 + x));
 							}
-							low = x + 1; 
-						// Schleife nach oben  
+							low = x + 1;
+						// Schleife nach oben
 						var x = totalUnbuffed.str;
-						var y = valorousPresence; 
+						var y = valorousPresence;
 						while (y == valorousPresence) {
 							x++;
 							y  = Math.round((20 * x) / (200 + x));
 							}
-							high = x - 1; 
-						htmlStats += 'Val.Pres.: +' + valorousPresence + 'STR<sub>Party</sub><br>';	
+							high = x - 1;
+						htmlStats += 'Val.Pres.: +' + valorousPresence + 'STR<sub>Party</sub><br>';
 						htmlStats += 'STR<sub>unb</sub> = ' + totalUnbuffed.str  + '&#8712;{' + low + ',..,' + high + '}<br>';
 						htmlStats +='Int.Gaze: +' + intimidatingGaze + 'CON<sub>Party</sub></font>';
 						} // end if WARRIOR
@@ -1082,12 +1085,12 @@ function calculateAttributes(wardrobe) {
 					'- per Daily: ' + (Math.round((dailyToDo * 100)) / 100) + '<br>' +
 					'- per To-Do: ' + (Math.round((dailyToDo * 100)) / 100) + '<br>' +
 					'</div></section>';
-					 	
+
 }; // end of function calculateAttributes
 //////////////////////////////
 //// calculate and display Skills, Wardrobes and stats
-//////////////////////////////	
-///////////push in skills container 
+//////////////////////////////
+///////////push in skills container
 
 
 
@@ -1096,10 +1099,10 @@ htmlStats =		'<div class="skills-Container">'; //needs class for toggling betwee
 htmlStats +=		'<div id="skill1"><br>'+ 
 				'<button type="button" id="castSkill1" style="color: #2995cd"> Cast ' + skills[user.stats.class].field1.name + '</button>'+
 				'<br><br>'+
-				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' +
 				'cost of buff: ' + skills[user.stats.class].field1.cost + '<br>' +
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field1.cost) + '<br>' +
-				'<br>' + 
+				'<br>' +
 				'<button type="button" id="sub1" class="sub">-</button>'+
     			'<input type="textfield" id="amount1" value="1" class="number" min="1" max="20">'+
     			'<button type="button" id="add1" class="add">+</button><br>'+
@@ -1107,69 +1110,68 @@ htmlStats +=		'<div id="skill1"><br>'+
 				'</div>'+
 				'<div id="skill2"><br>'+
 				'<button type="button" id="castSkill2" style="color: #2995cd"> Cast ' + skills[user.stats.class].field2.name + '</button>'+
-				'<p class="skillOnTask"></p>'; 
-				
-htmlStats +=	'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'<p class="skillOnTask"></p>';
+
+htmlStats +=	'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' +
 				'cost of buff: ' + skills[user.stats.class].field2.cost + '<br>' +
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field2.cost) + '<br>' +
-				'<br>' + 
+				'<br>' +
 				'<button type="button" id="sub2" class="sub">-</button>'+
     			'<input type="textfield" id="amount2" value="1" class="number" min="1" max="20">'+
 				'<button type="button" id="add2" class="add">+</button>'+
-				'<br>'+ 
+				'<br>'+
 				'</div>'+
-				
+
 				'<div id="skill3"><br>'+
 				'<button type="button" id="castSkill3" style="color: #2995cd"> Cast ' + skills[user.stats.class].field3.name + '</button>';
 				if (user.stats.class == 'rogue') {htmlStats += '<br>on ' + skills.rogue.field3.task};
 htmlStats += 	'<br><br>'+
-				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' +
 				'cost of buff: ' + skills[user.stats.class].field3.cost + '<br>' +
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field3.cost) + '<br>' +
-				'<br>' + 
+				'<br>' +
 				'<button type="button" id="sub3" class="sub">-</button>'+
     			'<input type="textfield" id="amount3" value="1" class="number" min="1" max="20">'+
     			'<button type="button" id="add3" class="add">+</button>'+
 				'<br>'+
 				'</div>'+
-				
+
 				'<div id="skill4"><br>'+
 				'<button type="button" id="castSkill4" style="color: #2995cd"> Cast ' + skills[user.stats.class].field4.name + '</button>';
 				if (user.stats.class == 'rogue') {htmlStats += '<br>on ' + skills.rogue.field4.task};
 htmlStats += 	'<br><br>'+
-				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' + 
+				'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' +
 				'cost of buff: ' + skills[user.stats.class].field4.cost + '<br>' +
 				'effective number of buffs: ' + Math.floor(user.stats.mp / skills[user.stats.class].field4.cost) + '<br>' +
-				'<br>' + 
+				'<br>' +
 				'<button type="button" id="sub4" class="sub">-</button>'+
     			'<input type="textfield" id="amount4" value="1" class="number min="1" max="20" />'+
     			'<button type="button" id="add4" class="add">+</button>'+
 				'<br>'+
 				'</div>';
-	 			
+
 htmlStats += 	'<div>Return to Wardrobe Intelligence: ';
-				rememberGear == "true" ? htmlStats += '<input type="checkbox" id="rememberGear" checked="checked"/>' : htmlStats += '<input type="checkbox" id="rememberGear" />';  
-				
-htmlStats += 	'<div class="bluestTask">Cast Skill on bluest task:'; 
-				castOnBluestTask == "true" ? htmlStats += '<input type="checkbox" id="castOnBluestTask" checked="checked"/>' : htmlStats += '<input type="checkbox" id="castOnBluestTask" />'; 
-				htmlStats += '</div>'; 
-				// show + hide class "bluestTask" and "taskSelector" on document.ready						
+				rememberGear == "true" ? htmlStats += '<input type="checkbox" id="rememberGear" checked="checked"/>' : htmlStats += '<input type="checkbox" id="rememberGear" />';
+
+htmlStats += 	'<div class="bluestTask">Cast Skill on bluest task:';
+				castOnBluestTask == "true" ? htmlStats += '<input type="checkbox" id="castOnBluestTask" checked="checked"/>' : htmlStats += '<input type="checkbox" id="castOnBluestTask" />';
+				htmlStats += '</div>';
+				// show + hide class "bluestTask" and "taskSelector" on document.ready
 				htmlStats += '<div class="avatar"></div>' +
 				// display Avatar later because getMaxGear() has not jet finished!
 				'</div>';
 				// loop through tasks and fill "select options" with all possible options
-htmlStats +=	'<div class="taskSelector">Choose task for your skill:<br><select style="width: 250px !important; max-width: 250px; overflow: hidden;" id="selectTask" ></select></div>'; 
-				 
-htmlStats += '</div>'; //end div skills-Container 
+htmlStats +=	'<div class="taskSelector">Choose task for your skill:<br><select style="width: 250px !important; max-width: 250px; overflow: hidden;" id="selectTask" ></select></div>';
+
+htmlStats += '</div>'; //end div skills-Container
 
 
 //////////end push in skills container
 
 //	drawFlexboxes;
-//function drawFlexboxes() {
 	function picsToFlexbox(copyGear) {
 		htmlStats +='<br>';
-		["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element){
+		slots.forEach(function(element){
 			if (copyGear[element] != 'undefined' && copyGear.hasOwnProperty(element) && copyGear[element] != '' && typeof wardrobeEquippedObject[element] != 'undefined') {
 				if (copyGear[element] && copyGear[element] != (element + '_base_0')) {
 					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' +
@@ -1178,12 +1180,13 @@ htmlStats += '</div>'; //end div skills-Container
 						'<br>STR: ' + content.gear.flat[copyGear[element]].str + ' CON: ' + content.gear.flat[copyGear[element]].con + '</p>' ;
 				}
 			} else {
-				htmlStats += '<a class="wrap" style="width: 68px; height: 68px; opacity: 0;"><img src="https://abbhh.de/Images/68x68.png"</a>'; 
+				htmlStats += '<a class="wrap" style="width: 68px; height: 68px; opacity: 0;"><img src="https://abbhh.de/Images/68x68.png"</a>';
 			} // end if copyGear[gear]
 		}) // end for each
 
 		htmlStats +='</a></div>'; // end single box (flexbox 2 - intelligence)
 	} // end function picsToFlexboxes
+
 	$('H1').hide();
 	$('#headerExtras').html(
 		'<div class="navbar">' +
@@ -1213,110 +1216,111 @@ htmlStats += '</div>'; //end div skills-Container
 			'</div>' +
 		'</div>'
 	);
-	
+
 	frontEnd = storeData("FrontEnd");
-	
-	
+
+
 	getMaxGear();
-	
-	htmlStats += '<div class="wardrobes-Container">'; 
-	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var 
-	 
-	
+
+	htmlStats += '<div class="wardrobes-Container">';
+	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var
+
+    function flexbox1 (copyGear) {
 	//start flexbox 1
-	// initialGear: 
-	htmlStats += '<div id="Initial" style="background-color: #cccccc"><h3>Equipped Gear:</h3>'; 
+	// initialGear:
+	htmlStats += '<div id="Initial" style="background-color: #cccccc"><h3>Equipped Gear:</h3>';
 	calculateAttributes(copyGear); // continue with content of flexbox 1 there
-	htmlStats +='<br>'; 
-		["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(element){
-			if (copyGear[element] != 'undefined' && copyGear.hasOwnProperty(element) && copyGear[element] != ''  && typeof wardrobeEquippedObject[element] != 'undefined') {
-				if (copyGear[element] != (element + '_base_0')) { 
-					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' + 
+	htmlStats +='<br>';
+		slots.forEach(function(element){
+			if (copyGear[element] != 'undefined' && copyGear.hasOwnProperty(element) && copyGear[element] != '' && typeof wardrobeEquippedObject[element] != 'undefined') {
+				if (copyGear[element] != (element + '_base_0')) {
+					htmlStats += '<a class="wrap"><img src="https://habitica-assets.s3.amazonaws.com/mobileApp/images/shop_' + copyGear[element] + '.png">' +
   						'<p class="description">' + content.gear.flat[copyGear[element]].text +
 						'<br>INT: ' + content.gear.flat[copyGear[element]].int + ' PER: ' + content.gear.flat[copyGear[element]].per +
-						'<br>STR: ' + content.gear.flat[copyGear[element]].str + ' CON: ' + content.gear.flat[copyGear[element]].con + '</p>' ;
-				} else {console.log(element + " has empty gear slot"); }
+						'<br>STR: ' + content.gear.flat[copyGear[element]].str + ' CON: ' + content.gear.flat[copyGear[element]].con + '</p>';
+				}
 			} else {
-				htmlStats += '<a class="wrap" style="width: 68px; height: 68px; opacity: 0;"><img src="https://abbhh.de/Images/68x68.png"</a>'; 
-			} // end if copyGear[gear]		
-		}) // end for each		
+				htmlStats += '<a class="wrap" style="width: 68px; height: 68px; opacity: 0;"><img src="https://abbhh.de/Images/68x68.png"</a>';
+			} // end if copyGear[element]
+		}) // end for each
 	htmlStats +='</a></div>'; // end single box (flexbox 2, 3, ...6)
+    } // end flexbox1
+
+    flexbox1(copyGear);
+
 	// start Flexbox 2
 	// INTELLIGENCE
 	htmlStats +='<div id="Intelligence" style="background-color: #2995cd"><h3>Wardrobe Intelligence:  <input id="INT" type="submit" value=" Equip "></h3>'; //e0ffff
-	// copy intelligence to copyGear so not to pullute user.items.gear.equipped anymore. 
+	// copy intelligence to copyGear so not to pullute user.items.gear.equipped anymore.
 	copyGear = {};
-	["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(gear) {
+	slots.forEach(function(gear) {
 		if (gear in intelligence) {
-				copyGear[gear] = intelligence[gear];
-				}
-		})
+			copyGear[gear] = intelligence[gear];
+		}
+	})
 	calculateAttributes(copyGear);
-	picsToFlexbox(copyGear); 
-	
-	
+	picsToFlexbox(copyGear);
+
 	// start flexbox 3
 	// PERCEPTION
-	htmlStats +='<div id="Perception" style="background-color: #4f2a93"; border: solid><h3>Wardrobe Perception:  <input id="PER" type="submit" value=" Equip "></h3>'; //continue Flexbox 5 ffdfff
+	htmlStats +='<div id="Perception" style="background-color: #4f2a93"; border: solid><h3>Wardrobe Perception: <input id="PER" type="submit" value=" Equip "></h3>'; //continue Flexbox 5 ffdfff
 	copyGear = {};
-	["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(gear) {
+	slots.forEach(function(gear) {
 		if (gear in perception) {
-				copyGear[gear] = perception[gear];
-				}
-		})
+			copyGear[gear] = perception[gear];
+		}
+	})
 	calculateAttributes(copyGear);
-	picsToFlexbox(copyGear); 
-	
-		
+	picsToFlexbox(copyGear);
+
 	// start Flexbox 4
 	// STRENGTH
-	htmlStats +='<div id="Strength" style="background-color: #f74e52"><h3>Wardrobe Strength:  <input id="STR" type="submit" value=" Equip "></h3>'; //continue Flexbox 7 ff9999
+	htmlStats +='<div id="Strength" style="background-color: #f74e52"><h3>Wardrobe Strength: <input id="STR" type="submit" value=" Equip "></h3>'; //continue Flexbox 7 ff9999
 	copyGear = {};
-	["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(gear) {
+	slots.forEach(function(gear) {
 		if (gear in strength) {
-				copyGear[gear] = strength[gear];
-				}
-		})
+			copyGear[gear] = strength[gear];
+		}
+	})
 	calculateAttributes(copyGear);
-	picsToFlexbox(copyGear); 
-	
-	
-	// start Flexbox 5 
+	picsToFlexbox(copyGear);
+
+	// start Flexbox 5
 	// CONSTITUTION
 	htmlStats +='<div id="Constitution" style="background-color: #ffa623"><h3>Wardrobe Constitution:  <input id="CON" type="submit" value=" Equip "></h3>'; //continue Flexbox 9 f9f9c9
 	copyGear = {};
-	["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(gear) {
+	slots.forEach(function(gear) {
 		if (gear in constitution) {
-				copyGear[gear] = constitution[gear];
-				}
-		})
+			copyGear[gear] = constitution[gear];
+		}
+	})
 	calculateAttributes(copyGear);
-	picsToFlexbox(copyGear); 	
-	
+	picsToFlexbox(copyGear);
+
 	// Start Flexbox 6
 	// BLESSING
 	htmlStats +='<div id="Blessing" style="background-color: #f9f9c9"><h3>Wardrobe Blessing:  <input id="BLE" type="submit" value=" Equip "></h3>'; //continue Flexbox 9
 	copyGear = {};
-	["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(gear) {
+	slots.forEach(function(gear) {
 		if (gear in blessing) {
-				copyGear[gear] = blessing[gear];
-				}
-		})
+			copyGear[gear] = blessing[gear];
+		}
+	})
 	calculateAttributes(copyGear);
-	picsToFlexbox(copyGear); 
-	
+	picsToFlexbox(copyGear);
+
 	// Start Flexbox 7
 	// LEGENDARY
 	htmlStats +='<div id="Legendary" style="background-color: #aabb88"><h3>Wardrobe Legendary: <input id="LEG" type="submit" value=" Equip "></h3>'; //continue Flexbox 9
 	copyGear = {};
-	["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"].forEach(function(gear) {
+	slots.forEach(function(gear) {
 		if (gear in legendary) {
-				copyGear[gear] = legendary[gear];
-				}
-		})
+			copyGear[gear] = legendary[gear];
+		}
+	})
 	calculateAttributes(copyGear);
-	picsToFlexbox(copyGear); 
-	
+	picsToFlexbox(copyGear);
+
 	// Flexbox for info about which wardrobe is currently equipped and for some buttons
 	htmlStats +='<div id="Overview">You are wearing:' +
 				'<div id="percept">Wardrobe PER</div>' +
@@ -1330,18 +1334,18 @@ htmlStats += '</div>'; //end div skills-Container
 				'<div>Your most valueable task is: </div><div> ' + mostValueableTaskName + '<div></div><div> with a value of: ' + Math.round(mostValueableTaskValue) + '</div><div></div>' +
 				'</div>' + // end single box;
 				'</div>'; // end Flexboxes
-		
+
 	$('#userStats').html(htmlStats);
 	addBorderToSelectedWardrobe();
-	$('#Overview').hide(); 	
-	
-//	} // end function drawFlexboxes; 
+	$('#Overview').hide();
+
+
 
 function addAvatar(wardrobe) {
 	avatar= '' +
 	'<div style="margin: -10px auto 0px 46px; width: 90px; height: 90px;">'+
 	'<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/skin_' + user.preferences.skin + '.png" style="position: absolute;">';
-	["eyewear", "headAccessory", "back", "body", "weapon", "armor", "head", "shield"].forEach (function(element) {
+	slots.forEach (function(element) {
 		if (wardrobeEquippedObject[element] != 'undefined' && wardrobeEquippedObject[element] != '' && typeof wardrobeEquippedObject[element] != 'undefined') {
 			//console.log(element + " " + wardrobeEquippedObject[element] + " " + typeof wardrobeEquippedObject[element]);
 			if (!wardrobeEquippedObject[element].includes('base_0')){
@@ -1417,61 +1421,61 @@ function getAmountOfSkill(field) {
 			if (Math.floor(user.stats.mp / skills[user.stats.class].field1.cost) <= amountOfSkill) {
 					amountOfSkill = Math.floor((user.stats.mp) / (skills[user.stats.class].field1.cost));
 					if (amountOfSkill == "NaN") {
-						amountOfSkill = 0;  
+						amountOfSkill = 0;
 						}
 			//document.querySelector("#amount1").value = amountOfSkill;
 			}
 		}
-		
-		
+
+
 		if (field == 'field2') {
 			amountOfSkill = parseInt(document.querySelector('#amount2').value);
 			if (amountOfSkill > 0) {storeData('skill2', parseInt(document.querySelector("#amount2").value));} // use parseInt to avoid paratheses in localStorage!
 			if (Math.floor((user.stats.mp / skills[user.stats.class].field2.cost))	 < amountOfSkill) {
 					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field2.cost);
 					if (amountOfSkill == "NaN") {
-						amountOfSkill = 0;  
+						amountOfSkill = 0;
 					}
 			console.log(amountOfSkill);
 			// document.querySelector("#amount1").value = amountOfSkill;
 			}
 		}
-		
+
 		if (field == 'field3') {
 			amountOfSkill = parseInt(document.querySelector("#amount3").value);
 			if (amountOfSkill > 0) {storeData("skill3", parseInt(document.querySelector("#amount3").value));} // use parseInt to avoid paratheses in localStorage!
 			if (Math.floor((user.stats.mp / skills[user.stats.class].field3.cost))	 < amountOfSkill) {
 					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field3.cost);
 					if (amountOfSkill == "NaN") {
-					amountOfSkill = 0;  
+					amountOfSkill = 0;
 					}
 			console.log(amountOfSkill);
 			// document.querySelector("#amount1").value = amountOfSkill;
 			}
 		}
-		
-		
-		
+
+
+
 		if (field == 'field4') {
 			amountOfSkill = parseInt(document.querySelector("#amount4").value);
 			if (amountOfSkill > 0) {storeData("skill4", parseInt(document.querySelector("#amount4").value));} // use parseInt to avoid paratheses in localStorage!
 			if (Math.floor((user.stats.mp / skills[user.stats.class].field4.cost))	 < amountOfSkill) {
 					amountOfSkill = Math.floor(user.stats.mp / skills[user.stats.class].field4.cost);
 					if (amountOfSkill == "NaN") {
-					amountOfSkill = 0;  
+					amountOfSkill = 0;
 					}
 			console.log(amountOfSkill);
 			// document.querySelector("#amount1").value = amountOfSkill;
 			}
 		}
-		
+
 		return amountOfSkill;
 	} // end of getAmountOfSkill
 //////////////////////////////////////////////////////////////////////
 ////   equip function      (within paseData)   ///////////////////////
-////   and castSkill function				   ///////////////////////			
+////   and castSkill function				   ///////////////////////
 //////////////////////////////////////////////////////////////////////
-		
+
 // https://petetasker.com/using-async-await-jquerys-ajax/
 
 async function doAjax(url){
@@ -1503,8 +1507,7 @@ function wait(waitTime) {
 
 
 async function werewolf() {
-	var element = ['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'];
-	var costumeEquip = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''};
+    var costumeEquip = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''};
 	var costumeResult = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''}; // we need ..Result for writing back to user data
 	var preferencesEquip = {'hair': {'base': 0}, 'chair': 'none'};
 	var today = new Date(); 
@@ -1512,172 +1515,168 @@ async function werewolf() {
 	var month = today.getMonth(); 
 	var date = today.getDate(); 
 	// get moon phase (ben-daglish.net) (full moon always on phase 15)
-	var lp = 2551443; 
+	var lp = 2551443;
 	var now = new Date(year,month+1,date,20,35,0);
 	var new_moon = new Date(1970, 0, 7, 20, 35, 0);
 	var phase = ((now.getTime() - new_moon.getTime()) / 1000) % lp;
-	var fullMoon = false; 
-	allowWerewolf = $('#allowWerewolf').is(':checked');
-	if ((Math.floor(phase / (24*3600) + 1)) == 15) {fullMoon = true;} // for testing: != , for work: == 
+	var fullMoon = false;
 	
-	if (fullMoon && allowWerewolf) {
-		//check if werewolf costume is equipped
-		if (user.items.gear.costume.armor == "armor_mystery_201509" && 
-			user.items.gear.costume.head == "head_mystery_201509" ) {
-				console.log("Full moon and werewolf costume equipped");
-		} else {
-			$('#modalContent').html('today is full moon... you turn into a werewolf!');
-			$('#modal').show();
-			console.log("Full moon but werewolf costume not equipped");
-			// equipping werewolfCostume and unequip rest (hair would be cool, but there is no API. ... Oh, wait... there is!)
-			for (var i=0; i<=7; i++) { 
-				costume[element[i]] = user.items.gear.costume[element[i]]; // costume holds the initially equipped costume items
-				if (element[i] == 'armor' && user.items.gear.costume.armor != "armor_mystery_201509"){
-					costumeEquip.armor = 'armor_mystery_201509'; 
-					costumeResult.armor = 'armor_mystery_201509';
-				} else 
-				if (element[i] == 'head' && user.items.gear.costume.head != "head_mystery_201509"){
-					costumeEquip.head = 'head_mystery_201509';
-					costumeResult.head = 'head_mystery_201509';
-				} else					 
-				if (user.items.gear.costume[element[i]] != element+'_base_0') {
-					costumeEquip[element[i]] = user.items.gear.costume[element[i]]; // replace with same item to unequip
-					costumeResult[element[i]] = element[i] + '_base_0' // results in "nothing equipped"
-				}
-				
-			}   // end for i
-			storeData('Costume', JSON.stringify(costume));
-			await callCostume(costumeEquip, costumeResult); 
-			// ... then handle preferences 
-			preferences.hair.base = user.preferences.hair.base; 
-			preferences.chair = user.preferences.chair; 
-			storeData('Preferences', JSON.stringify(preferences));
-			preferencesEquip.hair.base = 0; 
-			await callPreferences({'preferences.hair.base': 0}); 
-			user.preferences.hair.base = 0; 
-			await callPreferences({'preferences.chair': "none"}); 
-			user.preferences.chair = "none"; 
-			} // end else (full moon but werewolf not equipped)
-			
-			
-	} else {
-		// not full moon or werewolf not allowed  // equipping old costume back 
+    allowWerewolf = $('#allowWerewolf').is(':checked');
+	((Math.floor(phase / (24*3600) + 1)) == 15) ? fullMoon = true : fullMoon = false; // for testing: != , for work: ==
+
+	if (!fullMoon || !allowWerewolf) { 
+    // not full moon or werewolf not allowed  // equipping old costume back
 		if (user.items.gear.costume.armor == "armor_mystery_201509" && user.items.gear.costume.head == "head_mystery_201509") {
-				$('#modalContent').html('... you are no werewolf anymore!');
-				$('#modal').show();
-				costume = JSON.parse(storeData('Costume')); 
-				console.log(costume); 
-				for (var i = 0; i <= 7; i++) {
-					if (costume[element[i]] != element[i]+'_base_0' && costume[element[i]] != user.items.gear.costume[element[i]]){ 
-						costumeEquip[element[i]] = costume[element[i]];
-						costumeResult[element[i]] = costume[element[i]]; 
-					}	
-					if (costume[element[i]] == user.items.gear.costume[element[i]]) { // item already equipped...
-						costumeEquip[element[i]] = costume[element[i]]; // skip equipping later in callCostume function
-						costumeResult[element[i]] = costume[element[i]];
-					}
-					if (costume[element[i]] == element[i]+'_base_0') { // nothing shall be equipped
-						costumeEquip[element[i]] = costume[element[i]]; // skip equipping later in callCostume function
-						costumeResult[element[i]] = element[i]+'_base_0';
-					}
-				} // end for i 
-				await callCostume(costumeEquip, costumeResult);
-				preferences = storeData('Preferences'); 
-				// now to the preferences: 
-				preferences = JSON.parse(storeData('Preferences')); 
-				console.log(preferences.hair.base);
-				await callPreferences({'preferences.hair.base' : preferences.hair.base}); 
-				user.preferences.hair.base = preferences.hair.base; 
-				await callPreferences({'preferences.chair' : preferences.chair}); 
-				user.preferences.chair = preferences.chair; 
-					
-		} else {
-			console.log("Not full moon and werewolf costume not equipped -> write costume to localStorage"); 
-			for (var i = 0; i <= 7; i++) {
-				costume[element[i]] = user.items.gear.costume[element[i]]; 
+			costume = JSON.parse(storeData('Costume'));
+
+        	for (var i = 0; i <= 7; i++) {
+				if (costume[slots[i]] != slots[i]+'_base_0' && costume[slots[i]] != user.items.gear.costume[slots[i]]){
+					costumeEquip[slots[i]] = costume[slots[i]];
+					costumeResult[slots[i]] = costume[slots[i]];
+				}
+				if (costume[slots[i]] == user.items.gear.costume[slots[i]]) { // item already equipped...
+					costumeEquip[slots[i]] = costume[slots[i]]; // skip equipping later in callCostume function
+					costumeResult[slots[i]] = costume[slots[i]];
+				}
+				if (costume[slots[i]] == slots[i]+'_base_0') { // nothing shall be equipped
+					costumeEquip[slots[i]] = costume[slots[i]]; // skip equipping later in callCostume function
+					costumeResult[slots[i]] = slots[i]+'_base_0';
+				}
 			} // end for i
-			preferences.hair.base = user.preferences.hair.base; 
-			preferences.chair = user.preferences.chair; 
-			storeData('Preferences', JSON.stringify(preferences)); 
-		} // end else werewolf not equipped
-	} // end else (not full moon)
+
+       		await callCostume(costumeEquip, costumeResult);
+			preferences = storeData('Preferences');
+			// now to the preferences: 
+			preferences = JSON.parse(storeData('Preferences')); 
+			await callPreferences({'preferences.hair.base' : preferences.hair.base});
+			user.preferences.hair.base = preferences.hair.base;
+			await callPreferences({'preferences.chair' : preferences.chair});
+			user.preferences.chair = preferences.chair;
+		} else {
+			console.log("Not full moon and werewolf costume not equipped -> write costume to localStorage");
+			for (var i = 0; i <= 7; i++) {
+				costume[slots[i]] = user.items.gear.costume[slots[i]];
+			} // end for i
+			preferences.hair.base = user.preferences.hair.base;
+			preferences.chair = user.preferences.chair;
+			storeData('Preferences', JSON.stringify(preferences));
+            storeData('Costume', JSON.stringify(costume));
+        }
+        return;
+    } // end if full moon and allowWerewolf
+
+    //check if werewolf costume is equipped
+	if (user.items.gear.costume.armor == "armor_mystery_201509" && 
+		user.items.gear.costume.head == "head_mystery_201509" ) {
+            console.log("Full moon and werewolf costume equipped");
+            return;
+		} 
+
+	$('#modalContent').html('today is full moon... you turn into a werewolf!');
+	$('#modal').show();
+	console.log("Full moon but werewolf costume not equipped");
+
+	// equipping werewolfCostume and unequip rest
+	for (var i=0; i<=7; i++) {
+		costume[slots[i]] = user.items.gear.costume[slots[i]]; // costume holds the initially equipped costume items
+		if (slots[i] == 'armor' && user.items.gear.costume.armor != "armor_mystery_201509"){
+			costumeEquip.armor = 'armor_mystery_201509';
+			costumeResult.armor = 'armor_mystery_201509';
+		} else 
+		if (slots[i] == 'head' && user.items.gear.costume.head != "head_mystery_201509"){
+			costumeEquip.head = 'head_mystery_201509';
+			costumeResult.head = 'head_mystery_201509';
+		} else
+		if (user.items.gear.costume[slots[i]] != slots+'_base_0') {
+			costumeEquip[slots[i]] = user.items.gear.costume[slots[i]]; // replace with same item to unequip
+			costumeResult[slots[i]] = slots[i] + '_base_0' // results in "nothing equipped"
+		}
+	}   // end for i
+
+	storeData('Costume', JSON.stringify(costume));
+	await callCostume(costumeEquip, costumeResult);
+	preferences.hair.base = user.preferences.hair.base;
+	preferences.chair = user.preferences.chair;
+	storeData('Preferences', JSON.stringify(preferences));
+	preferencesEquip.hair.base = 0;
+	await callPreferences({'preferences.hair.base': 0});
+	user.preferences.hair.base = 0;
+	await callPreferences({'preferences.chair': "none"});
+	user.preferences.chair = "none";
 } // end function werewolf
 
-async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {  
-  var waitTime = 0; 
+
+async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
+  var waitTime = 0;
   $('#modalContentAbort').css("top", "27%");
-  $('#modalContentAbort').show(); 
+  $('#modalContentAbort').show();
   if (amount > 20) {
-  	amount = 20; 
-	alert("The number of skills to be cast is reduced to 20 \n The field value is set back to 1 \n Please do not overload the Habitica Server"); 
-  }	
+  	amount = 20;
+	alert("The number of skills to be cast is reduced to 20 \n The field value is set back to 1 \n Please do not overload the Habitica Server");
+  }
   if (user.stats.class == 'wizard' && field == 'field2') {url += '?targetId=' + skills.wizard[field].taskId; console.log(skills.wizard.field2.taskId);}
   if (user.stats.class == 'warrior'&& field == 'field2') {url += '?targetId=' + skills.warrior[field].taskId;}
-  if (user.stats.class == 'rogue' && (field == 'field3' || field == 'field4')) {url += '?targetId=' + skills.rogue[field].taskId;}  
+  if (user.stats.class == 'rogue' && (field == 'field3' || field == 'field4')) {url += '?targetId=' + skills.rogue[field].taskId;}
   for (var i = 1; i <= amount; i++) {
   	if (!abort){
-		$('#modalContent').html('casting: ' + name + '<br>' + i + '/' + amount + '<br>&nbsp;<br>&nbsp;');		
+		$('#modalContent').html('casting: ' + name + '<br>' + i + '/' + amount + '<br>&nbsp;<br>&nbsp;');
 		if (url.includes('?')) {
-			$('#modalContent').html('casting: ' + name + '<br> on ' + skills[user.stats.class][field].task + '<br>' + i + '/' + amount + '<br>');		
-			}		
-		waitTime = 3000 + (1000 * amount / (0.01 * amount + 20))	
+			$('#modalContent').html('casting: ' + name + '<br> on ' + skills[user.stats.class][field].task + '<br>' + i + '/' + amount + '<br>');
+			}
+		waitTime = 3000 + (1000 * amount / (0.01 * amount + 20));
 		await doAjax(url);
-		await wait(waitTime); 
+		await wait(waitTime);
 user.stats.mp = (user.stats.mp - cost);
   	} // end if abort
 	} //end for
   parseData();
-  $('#modalContentAbort').hide(); 
+  $('#modalContentAbort').hide();
 } // end callSkills...
 
 async function callCostume(costumeEquip, costumeResult) {
 		// {"preferences.hair.base":15} to ...api/v3/user PUT
 		var itemToEquip = '';
 		var typeOfItem = '';
-		equipCount = 0;
-		equipCountSkip = 0; 
+		var equipCount = 0;
+		var equipCountSkip = 0;
 		$('#modalContent').html('Equipping...');
 		$('#modal').show();
-		for (var i in ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]) { 
-				var element = costumeEquip[["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"][i]];  // fromat gear: head_base_0 e.g.
-			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
-			typeOfItem = content.gear.flat[element].type; //eg displays: head (good)
-			// verify if item is already equipped
-			htmlEnd += content.gear.flat[element].text + '<br>';
-					
-			if (element == typeOfItem + '_base_0') {
-					equipCountSkip++;
-					if (equipCountSkip===Object.keys(costumeEquip).length){ 
-						$('#modalContent').html('already equipped');
-						await wait(1000);
-					} // end if equipCountSkip
-			} else {	
-				url = 'https://habitica.com/api/v3/user/equip/costume/' + element;
-				$('#modalContent').html('Equipping ' + itemToEquip + '<br>' + (equipCountSkip + equipCount + 1) + '/8<br>');
-				console.log(url); 
-				await doAjax(url);	 
+		for (var i in slots) {
+			var element = costumeEquip[slots[i]];  // fromat: head_base_0 e.g.
+			typeOfItem = content.gear.flat[element].type; //eg displays: head
+
+			if (element.includes('_base_0')) {
+				equipCountSkip++;
+				if (equipCountSkip===Object.keys(costumeEquip).length){
+					$('#modalContent').html('already equipped');
+					await wait(1000);
+				} // end if equipCountSkip
+			} else {
+				url = serverUrl + '/user/equip/costume/' + element;
+				$('#modalContent').html('Equipping ' + element + '<br>' + (equipCountSkip + equipCount + 1) + '/8<br>');
+				console.log(url);
+				await doAjax(url);
 				user.items.gear.costume[typeOfItem] = costumeResult[typeOfItem];
-				equipCount++; 
-				await wait(500);	
+				equipCount++;
+				await wait(500);
 			} // end else
-		}; // end for var i 
+		}; // end for var i
 		await wait(50);
 		$('#modal').hide();
 		$('#modalContentAbort').hide();
-} // end function callCostume 
+} // end function callCostume
 
 
 async function callPreferences(data) {
- 
 	console.log(data + typeof(data) + JSON.stringify(data));  
-	let result; 
+	let result;
 	try {
-		result = await $.ajax({	
-				url: 'https://habitica.com/api/v3/user',
-				data: JSON.stringify(data), 
-				type: 'PUT', 
-				dataType: 'json', 
-				contentType: 'application/json', 
+		result = await $.ajax({
+				url: serverUrl + '/user',
+				data: JSON.stringify(data),
+				type: 'PUT',
+				dataType: 'json',
+				contentType: 'application/json',
 				cache: false,
 				beforeSend: function(xhr){
 					xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-API-Tool');
@@ -1690,16 +1689,15 @@ async function callPreferences(data) {
 			console.log(error.responseText);
 			}
 } // end async function callPreferences
-	 
+
 
 
 async function callWardrobe(wardrobe, name) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
 
-  var slots = ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]
   var itemToEquip = '';
   var typeOfItem = '';
-  equipCount = 0;
-  equipCountSkip = 0;
+  var equipCount = 0;
+  var equipCountSkip = 0;
   $('#modalContentAbort').css("top", "32%");
   $('#modalContentAbort').show();
   $('#modalContent').html('Equipping...');
@@ -1709,7 +1707,7 @@ async function callWardrobe(wardrobe, name) {  // wardrobe is intelligence, perc
 
     itemToEquip = wardrobe[slots[i]];  // fromat gear: head_base_0 e.g.
     typeOfItem = content.gear.flat[itemToEquip].type; //eg displays: head (good)
-    url = 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip;
+    url = serverUrl + '/user/equip/equipped/'+ itemToEquip;
 
     if (!abort) {
 
@@ -1767,8 +1765,9 @@ async function callWardrobe(wardrobe, name) {  // wardrobe is intelligence, perc
   }
 
   getEquippedWardrobes();
+  flexbox1(initialGear);
 
-} // end function callWardrobe 
+} // end function callWardrobe
 
 async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, field){ // amountOfSkill, API, "eg. Tools of the Trade, 25, perception, Object
 	if (abort) {break;}
@@ -1785,7 +1784,7 @@ async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, fi
 				    skills[user.stats.class][field].API, 
 				    skills[user.stats.class][field].name,
 				    skills[user.stats.class][field].cost,
-					skills[user.stats.class][field].nameOfWardrobe, 
+					skills[user.stats.class][field].nameOfWardrobe,
 					field);
 			getEquippedWardrobes();
 			if (wardrobeEquipped.includes('intelligence')) {
@@ -1793,21 +1792,21 @@ async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, fi
 			} else {
 					if (rememberGear=="true") { // remberGear displays as "Return to wardrobe Intelligence" on the front End. Think in FrontEnd locig here!
 							if (!abort) {await callWardrobe(intelligence, 'Intelligence');}
-					} else { 
+					} else {
 							console.log("OK. leaving " + name + " equipped.");
 							$('#modal').hide();}
-			}	
+			}
 			getEquippedWardrobes();
-			abort = false; 
+			abort = false;
 } // end callTriple
-					
+
 async function prepareTriple(amount, url, name, cost, wardrobe, nameOfWardrobe, field){
 	if (abort) {return;}
 	if (user.stats.mp < cost) {		// not enoght mana  ==> break up immediately
 			$('#modalContent').html('Not enough Mana.');
 			$('#modal').show()
 			await wait(1000);
-			$('#modal').hide();	
+			$('#modal').hide();
 	} else {
 			if (user.stats.lvl < skills[user.stats.class][field]){ // level not high enough
 					$('#modalContent').html('You need to reach level ' + skills[user.stats.class][field].unlock + ' to cast ' + name);
@@ -1816,229 +1815,231 @@ async function prepareTriple(amount, url, name, cost, wardrobe, nameOfWardrobe, 
 					$('#modal').hide();
 		 	} else {
 					callTriple(amount, url, name, cost, wardrobe, nameOfWardrobe, field);
-				   } 
-				
-	} 
+				   }
+	}
 } // end function prepareTriple
+
 async function loadParty(){
-		let result;  
-		try {
-			result = await $.ajax({	
-					url: 'https://habitica.com/api/v3/groups/party',
-					type: 'GET',
-					dataType: 'json',
-					cache: false,
-					beforeSend: function(xhr){
-						xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
-						xhr.setRequestHeader('x-api-user', userID);
-						xhr.setRequestHeader('x-api-key',  apiToken);
-					},
-					success: function(result){console.log("Party loaded!"); party = result.data}
-			});
+	let result;
+	try {
+		result = await $.ajax({
+			url: serverUrl + '/groups/party',
+			type: 'GET',
+			dataType: 'json',
+			cache: false,
+			beforeSend: function(xhr){
+				xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
+				xhr.setRequestHeader('x-api-user', userID);
+				xhr.setRequestHeader('x-api-key',  apiToken);
+			},
+			success: function(result){ party = result.data }
+		});
 		return party;
-		} catch (error) {
-			console.log(error.responseText);
-		}		
+		}
+    catch (error) {
+		console.log(error.responseText);
+	}
 } // end function loadParty
+
 async function loadMember(memberId){
-		var member;  
-		try {
-			var result = await $.ajax({	
-					url: 'https://habitica.com/api/v3/members/' + memberId,
-					type: 'GET',
-					dataType: 'json',
-					cache: false,
-					beforeSend: function(xhr){
-						xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
-						//xhr.setRequestHeader('x-api-user', userID);
-						//xhr.setRequestHeader('x-api-key',  apiToken);
-					},
-					success: function(result){member = result.data;}
-			});
+	var member;
+	try {
+		var result = await $.ajax({
+				url: serverUrl + '/members/' + memberId,
+				type: 'GET',
+				dataType: 'json',
+				cache: false,
+				beforeSend: function(xhr){
+					xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
+				},
+				success: function(result){member = result.data;}
+		});
 		return member; 
-		} catch (error) {
+	    }
+    catch (error) {
 			console.log(error.responseText);
-		}		
+	}
 } // end function loadPary
+
 async function partyCronTimes(){
-		$('#modalContent').html('Loading group data...');
-		$('#modal').show();
-		party = await loadParty(); 
-		var modalHtml = '';
-		var members; 
-		var memberId = [];
-		var memberData = {};
-		var memberName = [];
-		var memberLastCron = [];
-		var memberLastCronMilliseconds = [];
-		var i=0;
-		for (members in party.quest.members) { // member resolves in f74e2316-cad6-4da4-83aa-1ac8c586a8fc eg
-			memberId[i] = members; 
-			$('#modalContent').html('Loading member data...' + (i + 1));
-			memberData = await loadMember(memberId[i]);
-			memberName[i] = memberData.auth.local.username;
-			var date = new Date(memberData.auth.timestamps.loggedin); // transfer UTC to local time zone
-			memberLastCron[i] = date.getFullYear() + '/' +
-								(date.getMonth() + 1) + '/' + 
-								(date.getDate()<10 ? '0': '') + date.getDate() + ' ' + 
-								(date.getHours()<10 ? '0': '') + date.getHours() + ':' + 
-								(date.getMinutes()<10 ? '0': '') + date.getMinutes(); 
-			memberLastCronMilliseconds[i] = date.getTime();  
-			i++; 
-			}
-		
-		for (var i=0; i < memberLastCronMilliseconds.length; i++) {
-			for (var j=0; j < i; j++) {
-				if (memberLastCronMilliseconds[i] < memberLastCronMilliseconds[j]) {
-					
-					var x = memberLastCronMilliseconds[i];
-					memberLastCronMilliseconds[i] = memberLastCronMilliseconds[j];
-					memberLastCronMilliseconds[j] = x; 
-					
-					var x = memberName[i];
-					memberName[i] = memberName[j];
-					memberName[j] = x; 
-					
-					var x = memberLastCron[i]; 
-					memberLastCron[i] = memberLastCron[j];
-					memberLastCron[j] = x;
-				}
+	$('#modalContent').html('Loading group data...');
+	$('#modal').show();
+	party = await loadParty(); 
+	var modalHtml = '';
+	var members; 
+	var memberId = [];
+	var memberData = {};
+	var memberName = [];
+	var memberLastCron = [];
+	var memberLastCronMilliseconds = [];
+	var i=0;
+	for (members in party.quest.members) { // members: f74e2316-cad6-4da4-83aa-1ac8c586a8fc eg
+		memberId[i] = members;
+		$('#modalContent').html('Loading member data...' + (i + 1));
+		memberData = await loadMember(memberId[i]);
+		memberName[i] = memberData.auth.local.username;
+		var date = new Date(memberData.auth.timestamps.loggedin); // transfer UTC to local time zone
+		memberLastCron[i] = date.getFullYear() + '/' +
+							(date.getMonth() + 1) + '/' +
+							(date.getDate()<10 ? '0': '') + date.getDate() + ' ' +
+							(date.getHours()<10 ? '0': '') + date.getHours() + ':' +
+							(date.getMinutes()<10 ? '0': '') + date.getMinutes();
+		memberLastCronMilliseconds[i] = date.getTime();
+		i++;
+	}
+
+	for (var i=0; i < memberLastCronMilliseconds.length; i++) {
+		for (var j=0; j < i; j++) {
+			if (memberLastCronMilliseconds[i] < memberLastCronMilliseconds[j]) {
+				var x = memberLastCronMilliseconds[i];
+				memberLastCronMilliseconds[i] = memberLastCronMilliseconds[j];
+				memberLastCronMilliseconds[j] = x; 
+
+				var x = memberName[i];
+				memberName[i] = memberName[j];
+				memberName[j] = x; 
+
+				var x = memberLastCron[i]; 
+				memberLastCron[i] = memberLastCron[j];
+				memberLastCron[j] = x;
 			}
 		}
-		
-		modalHtml = 	'<div>These are the recent Cron-times of all members in your party. <br>: <br><pre>' + 
-						'<table>' +
-							'<tr>' +
-								'<th>Party member</th>' +
-								'<th>Last Cron</th>' +
-							'</tr>';
-		
-		for (var i=0; i < memberName.length; i++) {
-			modalHtml += '<tr>' +
-			 			 	'<td>' + memberName[i] + '</td> ' +
-							'<td>' + memberLastCron[i] + '</td>' +  
-						 '</tr>';
-			}
-		modalHtml += '</table>'; 
-		$('#modal').hide();
-		modalHtml += '</pre></div>';
-		$('.dataSectionxy').html(modalHtml);
-		$('#modalData').show(); 				
-}; 
+	}
+
+	modalHtml = 	'<div>These are the recent Cron-times of all members in your party. <br>: <br><pre>' +
+					'<table>' +
+						'<tr>' +
+							'<th>Party member</th>' +
+							'<th>Last Cron</th>' +
+						'</tr>';
+
+	for (var i=0; i < memberName.length; i++) {
+		modalHtml += '<tr>' +
+		 			 	'<td>' + memberName[i] + '</td> ' +
+						'<td>' + memberLastCron[i] + '</td>' +
+					 '</tr>';
+	}
+	modalHtml += '</table>';
+	$('#modal').hide();
+	modalHtml += '</pre></div>';
+	$('.dataSectionxy').html(modalHtml);
+	$('#modalData').show();
+};
+
 // cronHelper Ajax section
 async function scoreTaskDoAjax(id, direction, row){
 		
-		$('#modalContent').html('Scoring task...'); 
+		$('#modalContent').html('Scoring task...');
 		$('#modal').show();
-		
+
 		var mana = 0;
 		var gold = 0;
-		var health = 0; 
-		var level = 0; 
+		var health = 0;
+		var level = 0;
 		var experience = 0;
-		
+
 		// Prepare Ajax for scoring task. If ChecklitItem then score ChecklistItem
 		
 		for (var key in tasksFromDb) {
-		
+
 			// dealing with checklistItems
-			if (tasksFromDb[key].hasOwnProperty("checklist") && tasksFromDb[key].checklist != '') { 
+			if (tasksFromDb[key].hasOwnProperty("checklist") && tasksFromDb[key].checklist != '') {
 				for (var checklistKey in tasksFromDb[key].checklist) {
-						if (tasksFromDb[key].checklist[checklistKey].id == id) { 
-							url = 'https://habitica.com/api/v3/tasks/' + tasksFromDb[key].id + '/checklist/' + id + '/score';
-						} 
+						if (tasksFromDb[key].checklist[checklistKey].id == id) {
+							url = serverUrl + '/tasks/' + tasksFromDb[key].id + '/checklist/' + id + '/score';
+						}
 				}
 			}
 			// dealing with main-tasks including main-tasks with checklistitems
 			if (tasksFromDb[key].id == id) {
-				var url = 'https://habitica.com/api/v3/tasks/' + id + '/score/' + direction
+				var url = serverUrl + '/tasks/' + id + '/score/' + direction
 				if (tasksFromDb[key].hasOwnProperty('checklist') && tasksFromDb[key].checklist != '') {
 					if (confirm('There are unchecked checklist items.\n\nAre you sure?')) {}
 					else {$('#modal').hide(); return;}
 				}
 			}
 		} // end for var key in tasksFromDB	
-		
+
 		// now try ajax
 		try {
-			var result = await $.ajax({		
-					url: url, 
-					type: 'POST',
-					dataType: 'json',
-					cache: false,
-					beforeSend: function(xhr){
-						xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
-						xhr.setRequestHeader('x-api-user', userID);
-						xhr.setRequestHeader('x-api-key',  apiToken);
-					},
-					success: function(result){
-								mana = result.data.mp - user.stats.mp;
-								gold = result.data.gp - user.stats.gp;
-								health = result.data.hp - user.stats.hp;
-								level = result.data.lvl - user.stats.lvl;
-								experience = result.data.exp - user.stats.exp; 
-								//write back to var user
-								user.stats.mp = result.data.mp;
-								user.stats.gp = result.data.gp;
-								user.stats.hp = result.data.hp;
-								user.stats.lvl = result.data.lvl;
-								user.stats.exp = result.data.exp;
-								
-								var type = '';
-								
-								if (direction == 'up') {
-									var modalHtml = 'You gained:<br>';
+			var result = await $.ajax({
+				url: url,
+				type: 'POST',
+				dataType: 'json',
+				cache: false,
+				beforeSend: function(xhr){
+					xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes');
+					xhr.setRequestHeader('x-api-user', userID);
+					xhr.setRequestHeader('x-api-key',  apiToken);
+				},
+				success: function(result){
+					mana = result.data.mp - user.stats.mp;
+					gold = result.data.gp - user.stats.gp;
+					health = result.data.hp - user.stats.hp;
+					level = result.data.lvl - user.stats.lvl;
+					experience = result.data.exp - user.stats.exp;
+					//write back to var user
+					user.stats.mp = result.data.mp;
+					user.stats.gp = result.data.gp;
+					user.stats.hp = result.data.hp;
+					user.stats.lvl = result.data.lvl;
+					user.stats.exp = result.data.exp;
+
+					var type = '';
+
+					if (direction == 'up') {
+						var modalHtml = 'You gained:<br>';
+					}
+					if (direction == 'down') {
+						var modalHtml = 'You lost:<br>';
+					}
+
+					modalHtml += '<div style="width: 60%; color="#444444">' +
+					'<div style="font-size: x-small">\n' +
+					'\u2022Mana: ' + Math.round(10 * mana) / 10 + ' points<br>' +
+					'\u2022Gold: ' + Math.round(10 * gold) / 10 + ' points<br>' +
+					'\u2022Exp.: ' + Math.round(10 * experience) / 10 + ' points<br>';
+					if (level > 0) {modalHtml += '\u2022' + level + ' level<br>';}
+					if (health > 0) {modalHtml += '\u2022Health: ' + Math.round(10 * health) / 10 + ' points<br>';}
+					//if (result.data.hasOwnProperty('drop')) {modalHtml += '\u2022' + result.data.drop.dialog.text + 'found';}
+					modalHtml += '</div>';
+
+					// loop through tasksFromDb (again) to find id and set completed to true and check for deletion of row
+					for (var key in tasksFromDb) {
+						// 1st treat checklistItems
+						if (tasksFromDb[key].hasOwnProperty("checklist") && tasksFromDb[key].checklist != '') {
+							if (tasksFromDb[key].id == id) { // resolves in 'mainTask checked, while there are checklistItems'
+								tasksFromDb[key].completed = true; 		
+							} else { // resolves as checklistItemChecked
+								for (var checklistKey in tasksFromDb[key].checklist) {
+									if (tasksFromDb[key].checklist[checklistKey].id == id) {
+										tasksFromDb[key].checklist[checklistKey].completed = true; 
 									}
-								if (direction == 'down') {
-									var modalHtml = 'You lost:<br>';
 								}
-									
-									modalHtml += '<div style="width: 60%; color="#444444">' +  
-									'<div style="font-size: x-small">\n' +
-									'\u2022Mana: ' + Math.round(10 * mana) / 10 + ' points<br>' +
-									'\u2022Gold: ' + Math.round(10 * gold) / 10 + ' points<br>' +
-									'\u2022Exp.: ' + Math.round(10 * experience) / 10 + ' points<br>';
-									if (level > 0) {modalHtml += '\u2022' + level + ' level<br>';}
-									if (health > 0) {modalHtml += '\u2022Health: ' + Math.round(10 * health) / 10 + ' points<br>';}
-									//if (result.data.hasOwnProperty('drop')) {modalHtml += '\u2022' + result.data.drop.dialog.text + 'found';}
-									modalHtml += '</div>'; 
-									
-									// loop through tasksFromDb (again) to find id and set completed to true and check for deletion of row
-									for (var key in tasksFromDb) {
-										// 1st treat checklistItems
-										if (tasksFromDb[key].hasOwnProperty("checklist") && tasksFromDb[key].checklist != '') {
-											if (tasksFromDb[key].id == id) { // resolves in 'mainTask checked, while there are checklistItems'
-												tasksFromDb[key].completed = true; 		
-											} else { // resolves as checklistItemChecked
-												for (var checklistKey in tasksFromDb[key].checklist) {
-													if (tasksFromDb[key].checklist[checklistKey].id == id) {
-														tasksFromDb[key].checklist[checklistKey].completed = true; 
-														}
-													}
-												}
-											
-										} else { // end if checklistItem // if not a checklistItem
-										// 2nd treat non-checklistItems
-										
-											if (tasksFromDb[key].id == id) {
-												if (direction == 'up' && tasksFromDb[key].type != 'habit') {
-													tasksFromDb[key].completed = true;
-													} 
-												if (direction == 'up' && tasksFromDb[key].type == 'habit') {
-													tasksFromDb[key].counterUp++;
-												}
-												if (direction == 'down' && tasksFromDb[key].type == 'habit') {
-													tasksFromDb[key].counterDown++;
-												}
-												}
-											} // end else not a checklistItem
-									} // end for var key in tasksFromDb
-									modalHtml += '</div>'; 
-									$('#modalContent').html(modalHtml);										
-									setTimeout(function(){$('#modal').hide();}, 4000);
-									console.log('calling cronhelper() again');
-									cronHelper(); 
-								} // end success function
+							}
+
+						} else { // end if checklistItem // if not a checklistItem
+							// 2nd treat non-checklistItems
+
+							if (tasksFromDb[key].id == id) {
+								if (direction == 'up' && tasksFromDb[key].type != 'habit') {
+									tasksFromDb[key].completed = true;
+								} 
+								if (direction == 'up' && tasksFromDb[key].type == 'habit') {
+									tasksFromDb[key].counterUp++;
+								}
+								if (direction == 'down' && tasksFromDb[key].type == 'habit') {
+									tasksFromDb[key].counterDown++;
+								}
+							}
+						} // end else not a checklistItem
+					} // end for var key in tasksFromDb
+					modalHtml += '</div>';
+					$('#modalContent').html(modalHtml);
+					setTimeout(function(){$('#modal').hide();}, 4000);
+					console.log('calling cronhelper() again');
+					cronHelper();
+				} // end success function
 			});
 		} catch (error) {
 			$('#modalContent').html('Error: '+ error.responseText);
@@ -2046,14 +2047,13 @@ async function scoreTaskDoAjax(id, direction, row){
 			console.log(error);
 			setTimeout(function(){$('#modal').hide();}, 2000);
 		}
-				
 } // end function scoreTasksDoAjax
-	
-	
+
+
 function cronHelperMakeButton(taskId, direction, type, up, down) {
 	// mainTaskId is taskId in case of ChecklistItem: taskId will then be checklistId
 	var result = '';
-			
+
 	if (type == 'daily' && direction == 'up') {
 		result = '<button style="border-radius: 10px; border-style: none" class="up" id="' + taskId + '">+</button>';
 		}
@@ -2065,15 +2065,15 @@ function cronHelperMakeButton(taskId, direction, type, up, down) {
 		}
 	if (type == 'habit' && direction == 'down' && down != false) {
 		result = '<button style="border-radius: 10px; border-style: none" class="down" id="' + taskId + '">-</button>';
-		} 
-	return result; 	
+		}
+	return result;
 } // end function cronHelperMakeButton
 function cronHelper() {
 	var textForTasks = '';
 	var textForCron = '';
 	var textGeneral = '';
-	
-	//tasks section - automatic selection of wardrobe takes place here already, rather than later on checking off tasks. 
+
+	//tasks section - automatic selection of wardrobe takes place here already, rather than later on checking off tasks.
 	if (cronHelperWardrobeForTasks == 'disabled') {
 		textForTasks = 'Scoring Tasks: Automatic selection of gear is disabled.'
 		textGeneral = 'Under Settings/Cron Helper: you can select optimized gear allocation.<br>Please consider that after automatically changing gear, it is not possible to determine your previously selected battle gear.<br>'	
@@ -2086,9 +2086,9 @@ function cronHelper() {
 			if (cronHelperWardrobeForTasks == 'perception') {callWardrobe(perception, 'Perception')}
 			if (cronHelperWardrobeForTasks == 'strength') {callWardrobe(strength, 'Strength')}
 			if (cronHelperWardrobeForTasks == 'legendary') {callWardrobe(legendary, 'Legendary')}
-		} 
+		}
 	} // end Tasks section
-	
+
 	// cron section
 	if (cronHelperWardrobeForCron == 'disabled') {
 		textForCron = 'Running Cron: Automatic selection of gear is disabled.'
@@ -2099,13 +2099,10 @@ function cronHelper() {
 			textGeneral = ''; 
 		}
 	}
-		
+
 	$('#cronHelperInfo').css('font-size', 'x-small');
 	$('#cronHelperInfo').html(textForTasks + '<br>' + textForCron + '<br>' + textGeneral);
-	
-	
-	
-	
+
 	var x = document.getElementById('cronHelperTable').rows.length;
 	for (var i=1; i < x; i++) { // 1st 2 lines are header and space
 		document.getElementById('cronHelperTable').deleteRow(-1);
@@ -2117,7 +2114,7 @@ function cronHelper() {
 		for (var key in tasksFromDb) { // key as number for element
 			if (tasksFromDb[key].type == type) {	
 				
-				if (tasksFromDb[key].completed != true && tasksFromDb[key].isDue != false) {  
+				if (tasksFromDb[key].completed != true && tasksFromDb[key].isDue != false) {
 					var table = document.getElementById('cronHelperTable');
 					// insert spacer-row
 					var row = table.insertRow(-1);
@@ -2132,10 +2129,10 @@ function cronHelper() {
 					if (tasksFromDb[key].hasOwnProperty("checklist") && tasksFromDb[key].checklist != '') {
 						//1st Row: display taskname, type, score u/d
 						cell1.innerHTML = '<div class="taskLong">' + tasksFromDb[key].text + '</div>' +
-										  '<div class="taskType">' + tasksFromDb[key].type + '</div>' +						  	
+										  '<div class="taskType">' + tasksFromDb[key].type + '</div>' +
 										  '<div class="score">' + cronHelperMakeButton(tasksFromDb[key].id, 'up', tasksFromDb[key].type, tasksFromDb[key].up, tasksFromDb[key].down) + '</div>' +
 										  '<div class="score">' + cronHelperMakeButton(tasksFromDb[key].id, 'down', tasksFromDb[key].type, tasksFromDb[key].up, tasksFromDb[key].down) + '</div>';
-										  
+
 						//2nd ++ Rows display -, checklistItem, Chekclist, score u/d
 						for (var checklistKey in tasksFromDb[key].checklist) {
 							if (tasksFromDb[key].checklist[checklistKey].completed != true) {
@@ -2144,15 +2141,15 @@ function cronHelper() {
 								i++;
 								(i  / 2 == Math.round(i / 2)) ? row.style.backgroundColor = "#eeeeee" : row.style.backgroundColor = "#f5f5f5"
 								var cell1 = row.insertCell(0); 
-								cell1.innerHTML = '<div class="taskShort">-</div>' + 
+								cell1.innerHTML = '<div class="taskShort">-</div>' +
 												  '<div class="checklistItem">' + tasksFromDb[key].checklist[checklistKey].text + '</div>' +
 												  '<div class="taskType">Checklist</div>' +
 												  '<div class="score">' + cronHelperMakeButton(tasksFromDb[key].checklist[checklistKey].id, 'up', tasksFromDb[key].type) + '</div>' +
-												  '<div class="score">' + cronHelperMakeButton(tasksFromDb[key].checklist[checklistKey].id, 'down', tasksFromDb[key].type) + '</div>'; 
-							} // end if completed checklist 
+												  '<div class="score">' + cronHelperMakeButton(tasksFromDb[key].checklist[checklistKey].id, 'down', tasksFromDb[key].type) + '</div>';
+							} // end if completed checklist
 							//if (i / 2 != Math.round(i / 2)) {table.insertRow(-1); cell1=row.insertCell(0);}
 						} // end for var checklistKey
-						
+
 					} else {
 						// Task without any checklistItems
 						var scoreInfo = '';
@@ -2161,17 +2158,17 @@ function cronHelper() {
 							var row = table.insertRow(-1);
 							row.insertCell(0);
 						}
-						
+
 						if (tasksFromDb[key].type == 'habit') {scoreInfo = '<span style="color: #cccccc">(' + tasksFromDb[key].counterUp + '/' + tasksFromDb[key].counterDown + ')</span>'}
 						if (tasksFromDb[key].type == 'daily') {scoreInfo = '<span style="color: #cccccc">(' + tasksFromDb[key].streak + ')</span>'}
 						
 						cell1.innerHTML = '<div class="taskLong">' + tasksFromDb[key].text + scoreInfo + '</div>' +
-										  '<div class="taskType">' + tasksFromDb[key].type + '</div>' +						  	
+										  '<div class="taskType">' + tasksFromDb[key].type + '</div>' +
 										  '<div class="score">' + cronHelperMakeButton(tasksFromDb[key].id, 'up', tasksFromDb[key].type, tasksFromDb[key].up, tasksFromDb[key].down) + '</div>' +
 										  '<div class="score">' + cronHelperMakeButton(tasksFromDb[key].id, 'down', tasksFromDb[key].type, tasksFromDb[key].up, tasksFromDb[key].down) + '</div>';
 					}
-				} // end if completed	
-			} // end if tasksFromDb 
+				} // end if completed
+			} // end if tasksFromDb
 		} // end for var key in tasksFromDb
 	} // function output(type);
 } // end function cronHelper
@@ -2180,10 +2177,10 @@ async function callForceCron() {
 	async function getUserData() {
 		$('#modalContent').html('Please wait, re-fetching user data from Habitica... ');
 		$('#modal').show();
-		let result;  
+		let result;
 		try {
-			result = await $.ajax({	
-				url: 'https://habitica.com/api/v3/user',
+			result = await $.ajax({
+				url: serverUrl + '/user',
 				type: 'GET',
 				dataType: 'json',
 				cache: false,
@@ -2204,29 +2201,29 @@ async function callForceCron() {
 		$('#modalContent').html('Your Cron has not yet taken place.<br>Please try later!');
 		$('#modal').show();
 		setTimeout(function(){$('#modal').hide()}, 3000);
-		return; 
+		return;
 	} else {
-		
+
 		if (cronHelperWardrobeForCron == 'disabled' && !wardrobeEquipped.includes('intelligence')) {
-			if (confirm('You are going to run Cron with your individually selected Battle Gear.'+ 
+			if (confirm('You are going to run Cron with your individually selected Battle Gear.'+
 						'You might want to change to wardrobe Intelligence to gain more mana.' +
 						'\n\nPlease be aware that after changing to wardobe Intelligence, there is ' +
 						'no way to determine your previously selected gear.\n\nDo you want to proceed with your current gear?')){
 				if (confirm('This will run Cron. Are all of your completed tasks ticked off?\n\n Are you sure you want to proceed?')) {
-					await doAjax('https://habitica.com/api/v3/cron');
-					fetchData(); 
+					await doAjax(serverUrl + '/cron');
+					fetchData();
 				} else {
 					alert('Action cancelled');
 					return;
 				}
 			} else {
 				alert('Action cancelled.'); 
-				return; 
-			} 	
+				return;
+			}
 		} else {
 			if (confirm('This will run Cron. Are all of your completed tasks ticked off?\n\n Are you sure you want to proceed?')) {
 				if (!wardrobeEquipped.includes('intelligence')) { await callWardrobe('intelligence');}
-				await doAjax('https://habitica.com/api/v3/cron');
+				await doAjax(serverUrl + '/cron');
 				fetchData();
 			}
 		}
@@ -2247,45 +2244,38 @@ async function abortFunction() {
 /////////////////////////////////////////////////
 ///////////////// Buttons ///////////////////////
 /////////////////////////////////////////////////
-	 
+
 	$( document ).ready(function() {
     	if (user.items.gear.owned.head_mystery_201509 && user.items.gear.owned.armor_mystery_201509) {
 			$('#werewolf').show();
 		} else {
 			$('#werewolf').hide();
 		}
-		
+
 		// display tasks on which a skill can be cast
 		getTasks(); 
 		displayTasks(); 
-		 
+
 	});
-	
-	
-		 
+
+
+
 	 $(document).click(function(event) {
-	 
-			var eclass = $(event.target).closest().prevObject[0].className; 
+
+			var eclass = $(event.target).closest().prevObject[0].className;
 			var eid = $(event.target).closest().prevObject[0].id;
-			var row = $(event.target).parents('tr').index(); 
-	 		
-		
+			var row = $(event.target).parents('tr').index();
+
 			// determine which row / column was clicked ... (cronHelper)
-			//$("#cronHelperTable td").click(function() {  
-			  
+			//$("#cronHelperTable td").click(function() {
+
 				if (eclass == 'up' || eclass == 'down') {
 					//console.log(' score : col: '+ column_num + ' id: ' + eid + ' line ' + r + 'this: ' + JSON.stringify($(this).parents(1).index()));
-					
-					
 					scoreTaskDoAjax(eid, eclass, row);
-					} // end if  eclass up or down		
-				
+					} // end if  eclass up or down
+
 			//}) // end $cronHelperTable click
-	 		
-		
-			
-	 		
-			
+
 			// modals
 			//if you click on anything except the modal itself or the "open modal" link, close the modal
  			if ($(event.target).closest("#modalDataContent, #TAS, #HCT, #USR, #SKL, #DGR, #PAR").length == 0) {
@@ -2303,7 +2293,7 @@ async function abortFunction() {
 			if ($(event.target).closest('#modalCronHelperContent, #CRO, #forceCron').length == 0){
 				$('#modalCronHelper').hide();
 			}
-				
+
 			if ($(event.target).closest(".close").length == 1) {
 				$('#modal').hide();
 				$('#modalData').hide();
@@ -2311,56 +2301,56 @@ async function abortFunction() {
 				$('#modalVersion').hide();
 				$('#modalHelp').hide();
 				$('#modalCronHelper').hide();
-				}	
+				}
 	 });
 	 $('#HCT').click(function(){
 	 			$('.dataSectionxy').html(
-				'<div>This is Habitica\'s content: <br><pre><span style="font-size: x-small">' + 
-				JSON.stringify(content, null, 4) +  
+				'<div>This is Habitica\'s content: <br><pre><span style="font-size: x-small">' +
+				JSON.stringify(content, null, 4) +
 				'</span></pre></div>');
-				$('#modalData').show(); 
+				$('#modalData').show();
 				});
 	 $('#USR').click(function(){
 	 			$('.dataSectionxy').html(
-				'<div>This is your user profile: <br><pre><span style="font-size: x-small">' + 
-				JSON.stringify(user, null, 4) +  
+				'<div>This is your user profile: <br><pre><span style="font-size: x-small">' +
+				JSON.stringify(user, null, 4) +
 				'</span></pre></div>');
-				$('#modalData').show(); 
+				$('#modalData').show();
 				});
-	 $('#SKL').click(function(){	 
+	 $('#SKL').click(function(){
 		 		$('.dataSectionxy').html(
-				'</span><div>These are your skills: <br><pre><span style="font-size: x-small">' + 
-				JSON.stringify(skills[user.stats.class], null, 4) +  
+				'</span><div>These are your skills: <br><pre><span style="font-size: x-small">' +
+				JSON.stringify(skills[user.stats.class], null, 4) +
 				'</pre></div>');
-				$('#modalData').show(); 
-				});  
+				$('#modalData').show();
+				});
 	 $('#PAR').click(function(){
 	 			partyCronTimes();
 	 			})
 	 $('#CRO').click(function(){
 	 			cronHelper();
 	 			$('#modalCronHelper').show();
-	 			})	 
+	 			})
 	 $('#TAS').click(function(){
 	 			var showHistory = $('#showHistory').is(':checked');
 				if (showHistory != true) {
-					var output = JSON.parse(JSON.stringify(tasksFromDb)); 
+					var output = JSON.parse(JSON.stringify(tasksFromDb));
 					for (var key in output) {
 						if (output[key].hasOwnProperty("history")) {
-							delete output[key].history; 
+							delete output[key].history;
 						}
-					} 				
+					}
 					$('.dataSectionxy').html(
-					'<div>These are your tasks: <br><pre><span style="font-size: x-small">' + 
-					JSON.stringify(output, null, 4) +  
+					'<div>These are your tasks: <br><pre><span style="font-size: x-small">' +
+					JSON.stringify(output, null, 4) +
 					'</span></pre></div>');
 				} else {
 					$('.dataSectionxy').html(
-					'<div>These are your tasks: <br><pre><span style="font-size: x-small">' + 
-					JSON.stringify(tasksFromDb, null, 4) +  
+					'<div>These are your tasks: <br><pre><span style="font-size: x-small">' +
+					JSON.stringify(tasksFromDb, null, 4) +
 					'</span></pre></div>');
-				} 
-				$('#modalData').show();  
+				}
+				$('#modalData').show();
 				});
 	 $('#SET').click(function(){
 	 			$('#modalSettings').show();
@@ -2370,10 +2360,10 @@ async function abortFunction() {
 				});
 	 $('#ICO').click(function(){
 				$('.dataSectionx').html(
-				'<div>This is your avatar: <br>' +   
+				'<div>This is your avatar: <br>' +
 				loadAvatar() +
 				'</div>');
-				$('#modalData').show(); 
+				$('#modalData').show();
 				});
 	 $('#INT').click(function(){
 	 			htmlEnd = '<div>Wardrobe INT <br>';
@@ -2404,13 +2394,13 @@ async function abortFunction() {
 				callWardrobe(blessing, 'Blessing');
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				});		
+				});
 	 $('#STR').click(function(){
 	 			htmlEnd = '<div>Wardrobe Strength <br>';
 				callWardrobe(strength, 'Strength');
 				htmlEnd += '</div>';
 				$('#displayContent').html(htmlEnd);
-				});	
+				});
 	$('#HLP').click(function(){
 				$('#modalHelp').show();
 				}); // end of click
@@ -2425,6 +2415,7 @@ async function abortFunction() {
 							'<div><pre>Legendary Gear: ' + JSON.stringify(legendary, null, 4) + '</pre></div>' +
 							'<div><pre>Initial Gear HB: ' + JSON.stringify(user.items.gear.equipped, null, 4) + '</pre></div>' +
 							'<div><pre>Initial Gear JS: ' + JSON.stringify(initialGear, null, 4) + '</pre></div>';
+                            '<div><pre>wardrobeEquippedObject: ' + JSON.stringify(wardrobeEquippedObject, null, 4) + '</pre></div>';
 			$('.dataSectionxy').html(displayGear);
 			$('#modalData').show();
 			}); // end of click
@@ -2454,19 +2445,17 @@ async function abortFunction() {
 		if ($(this).prev().val() < 20) {
     		$(this).prev().val(+$(this).prev().val() + 1);
 		}
-		
-		
-		})
+	})
 	$('.sub').click(function () {
 		if ($(this).next().val() > 1) {
     		if ($(this).next().val() > 1) $(this).next().val(+$(this).next().val() - 1);
 		}
-		})
+	})
 	$('#castSkill1').click(function () {
 		if (document.querySelector('#amount1').value > 20) {
 			document.querySelector("#amount1").value = 20; 
 			alert("Values above 20 for this entry are not allowed");
-			}
+		}
 		storeData('skill1', JSON.stringify(document.querySelector('#amount1').value));
 		amountOfSkill = getAmountOfSkill("field1");
 		prepareTriple(amountOfSkill,
@@ -2594,8 +2583,8 @@ async function abortFunction() {
     $('#output').html(htmlStart + html + htmlEnd);
 	prepareSkillAmounts();
 	(frontEnd == 'wardrobes') ? $('.skills-Container').hide() : $('.wardrobes-Container').hide();
-	
-	
+
+
 } // End of parseData() and its nested functions
 }); // end of global Function
 </script>
@@ -2651,7 +2640,7 @@ div.scroll {
 	left: 0px;
 }
 .rightSide {
-	position: absolute; 
+	position: absolute;
 	float: right;
 	right: 0px;
 }
@@ -2757,7 +2746,6 @@ div.scroll {
 .innerOne {
 	text-transform: uppercase;
 	text-align: center;
-	
 	margin-top: 6%; 
 	font-size: large;
     width: 45%;
@@ -2765,7 +2753,6 @@ div.scroll {
     background: #ffffff;
 	color: #4e4a57;
 	float: left;
-	
 }
 .innerTwo {
 	font-size: x-small;
@@ -2786,7 +2773,6 @@ div.scroll {
 }
 .left {
     width: 58%;
-    
 	float: left;
 }
 .middle {
@@ -2807,8 +2793,7 @@ div.scroll {
 	border-radius: 8px;
 	border-style: solid;
 	border-width: 3px;
-	border-color: #ffffff
-	
+	border-color: #ffffff;
 }
 .mana {
 	width: 47%;
@@ -2825,7 +2810,6 @@ div.scroll {
 ***************************/
 .wrap {
   position: relative;
-  
 }
 .description {
   border-radius: 8px;
@@ -2896,11 +2880,10 @@ div.scroll {
 quantity buttons
 ***************/
 .number {
-	width: 20px; 
-	text-align: center;  
+	width: 20px;
+	text-align: center;
 }
-	 
-	
+
 
 /**********************************************************************
 ****** Modal **********************************************************
@@ -2922,7 +2905,7 @@ quantity buttons
 }
 /* Modal Content */
 .modal-content {
-	position: absolute; 
+	position: absolute;
 	left: 50%;
 	top: 32%;
 	transform: translate(-50%, -50%);
@@ -2933,15 +2916,15 @@ quantity buttons
     border: 1px solid #888;
     width: 300px;
 	font-weight: bold;
-	text-align: center; 
+	text-align: center;
 }
 .modal-content-footer {
 	position: relative;
 	left: 50%;
-	top: calc(32vh); 
+	top: calc(32vh);
 	transform: translate(-50%, -50%);
 	width: 300px;
-	text-align: center; 
+	text-align: center;
 }
 /* modalData and modalData-content for big modals (tasks, skills, content, user, version info, help */
 /* The Modal (background) */
@@ -2966,11 +2949,11 @@ quantity buttons
     width: 80%;
     height: 90%;
 	min-width: 80%;
-	max-width: 600px; 
+	max-width: 600px;
 	border-radius: 8px;
 	background-color: #fefefe; 
     border: 2px solid #eeeeee;
-	z-index: 4; 
+	z-index: 4;
 }
 /* cronHelper */
 .cornHelperTable {
@@ -2982,7 +2965,6 @@ quantity buttons
 	border-right-style: none;
 	border-left-style: 5px;
 	border-color: #eeeeee;
-	
 }
 .top {
   overflow: hidden;
@@ -2991,7 +2973,7 @@ quantity buttons
   top: 0;
   height: 80px;
   max-height: 200px;
-  width: 100%;	
+  width: 100%;
 }
 .dataSectiony {
 	overflow-y: auto;
@@ -3077,14 +3059,14 @@ body {
   color: #662266;
   text-align: center;
   padding: 14px 16px;
-  text-decoration: none;	
+  text-decoration: none;
 }
 .dropdown {
   float: left;
   overflow: hidden;
 }
 .dropdown .dropbtn {
-  font-size: 16px;  
+  font-size: 16px;
   border: none;
   outline: none;
   color: #662266;
@@ -3178,7 +3160,7 @@ td, th {
 		</div>	
 
 		<!-- modal for the separate Settings-page -->
-		<div id="modalSettings" class="modalData">	
+		<div id="modalSettings" class="modalData">
 			<div id="modalSettingsContent" class="modalData-content" style="background-color: rgba(250,250,250,0.85)">
 				<div class="top">
 					<span class="leftSide">Settings:</span>
@@ -3203,9 +3185,9 @@ td, th {
 						All wardrobes are pre-filled with the users Habitica-side chosen Battle Gear. <br>
 						Pre-filled gear is replaced by equipment from inventory with values exceeding the threshold.<br>
 						Choosing a low threshold will allow the wardrobes to be aligned to maximum attribute points, even at the expense of other important attributes.<br>
-						At a high threshold, the maximum yield of attribute points is not achieved, but other important attributes are more likely maintained.<br>     
+						At a high threshold, the maximum yield of attribute points is not achieved, but other important attributes are more likely maintained.<br>
 					</p>
-					<p>Set alternative attribute: 
+					<p>Set alternative attribute:
 						<select id="alternativeAttribute" onchange="console.log(value)">
 							<option value="none">-none-</option>
 							<option value="int">Intelligence</option>
@@ -3215,17 +3197,17 @@ td, th {
 						</select>
 					</p>
 					<p style="font-size: x-small">
-						An alternative attribute can be selected to exchange equipment with values ​​below the threshold for equipment with different attributes.       
-					</p>	
+						An alternative attribute can be selected to exchange equipment with values ​​below the threshold for equipment with different attributes.
+					</p>
 					
 					<p>Force Aether Amulet and Comical Arrow<input id="forceAetherAmuletAndComicalArrow" type="checkbox" autocomplete="off" /></p>
 					<p style="font-size: x-small">
-						Both Aether Amulet and Comical Arrow provide high attribute points for STR. Regardless of other setting, "force Aether Amulet and Comical Arrow" 
-						equips both items, provided they are in the iventory. This does not apply to wardrobe PER.        
-					</p>	
+						Both Aether Amulet and Comical Arrow provide high attribute points for STR. Regardless of other setting, "force Aether Amulet and Comical Arrow"
+						equips both items, provided they are in the iventory. This does not apply to wardrobe PER.
+					</p>
 					<hr>
 					<p>Cron Helper: </p>
-					<p>Wardrobe for Tasks: 
+					<p>Wardrobe for Tasks:
 					  <select id="cronHelperWardrobeForTasks" onchange="console.log(value)">
   						<option value="disabled">-disabled-</option>
 						<option value="intelligence">Intelligence</option>
@@ -3235,22 +3217,22 @@ td, th {
 					  </select>
 					</p>
 					<p style="font-size: x-small">
-						Cron Helper can change wardrobes when scoring tasks automatically, depending on the setting made here. <br> 
-						For players who do not wish to change equipment using the Cron Helper, this procedure can be disabled. <br> 
-						CAUTION: Scoring tasks with the help of automated change of wardrobes will change the users battle gear. Once equipped, there is no way to determine previous state!       
+						Cron Helper can change wardrobes when scoring tasks automatically, depending on the setting made here. <br>
+						For players who do not wish to change equipment using the Cron Helper, this procedure can be disabled. <br>
+						CAUTION: Scoring tasks with the help of automated change of wardrobes will change the users battle gear. Once equipped, there is no way to determine previous state!
 					</p>
-					<p>Wardrobe for Cron: 
+					<p>Wardrobe for Cron:
 					  <select id="cronHelperWardrobeForCron" onchange="console.log(value)">
   						<option value="disabled">-disabled-</option>
 						<option value="intelligence">Intelligence</option>
 						</select>
 					</p>
 					<p style="font-size: x-small">
-						Cron Helper can change wardrobes when running cron automatically, depending on the setting made here. <br> 
-						For players who do not wish to change equipment using the Cron Helper, this procedure can be disabled. <br> 
-						CAUTION: Running cron with the help of automated change of wardrobes will change the users battle gear. Once equipped, there is no way to determine previous state!       
+						Cron Helper can change wardrobes when running cron automatically, depending on the setting made here. <br>
+						For players who do not wish to change equipment using the Cron Helper, this procedure can be disabled. <br>
+						CAUTION: Running cron with the help of automated change of wardrobes will change the users battle gear. Once equipped, there is no way to determine previous state!
 					</p>
-			
+
 					<hr>
 					<p>Show History on Data\Tasks: <input id="showHistory" type="checkbox" autocomplete="off" /><span style="font-size: x-small">(Initially hidden for better view)</span></p>
 					<hr>
@@ -3283,15 +3265,15 @@ td, th {
 					<span class="close">&times; &nbsp;</span>
 				</div>
 				<div class="dataSectionxy">
-					main content here	
+					main content here
 				</div>
-				<div class="bottom"> 
+				<div class="bottom">
 					<span class="leftSide bottomSide">
 						To close, click x or outside this window 
 					</span>
 					<span class="rightSide bottomSide">
 						&nbsp;
-					</span> 
+					</span>
 				</div>
 			</div>
 		</div>
@@ -3335,13 +3317,13 @@ td, th {
 						<button id="forceCron" 
 							style="border-radius: 8px; 
 								   border: none;
-								   background-color: green; 
+								   background-color: green;
 								   color: white; 
 								   font-size: large;">
 							Force Cron
 						</button>
 						&nbsp;
-					</span> 
+					</span>
 				</div>
 			</div>
 		</div>
@@ -3355,15 +3337,15 @@ td, th {
 					<span class="close">&times; &nbsp;</span>
 				</div>
 				<div class="dataSectionFix">
-					<ol style="list-style-position: outside;"> 
+					<ol style="list-style-position: outside;">
 						Help: <br><br>
 						<li>Habitican Wardrobes is a HTML-File using Javascript. <br>The code can be found on 
 						<a href="https://github.com/PitiTheGrey/Habitican-Wardrobes" target="_blank">Github</a></li>
-						<li>There is a <a href="https://habitica.com/groups/guild/ba3e642f-a109-4ad2-b041-301c2935189f">Habitican Wardrobes Guild</a> 
+						<li>There is a <a href="https://habitica.com/groups/guild/ba3e642f-a109-4ad2-b041-301c2935189f">Habitican Wardrobes Guild</a>
 						on Habitica to discuss feature requests, report bugs, ask questions, give feedback and alike. </li>
 						<li>Please feel free to read the <a href="https://habitica.fandom.com/wiki/Habitican_Wardrobes">wiki page</a> about Habitican Wardrobes and the 
 						<a href="https://habitica.fandom.com/wiki/Cron_Helper">Cron Helper</a>.</li>
-					</ol>	
+					</ol>
 				</div>
 				<div class="bottom"> 
 					<span class="leftSide bottomSide">
@@ -3371,13 +3353,13 @@ td, th {
 					</span>
 					<span class="rightSide bottomSide">
 						&nbsp;
-					</span> 
+					</span>
 				</div>
 			</div>
 		</div>
 
 		<!-- modal for version-info -->
-		<div id="modalVersion" class="modalData">	
+		<div id="modalVersion" class="modalData">
 			<div id="modalVersionContent" class="modalData-content">
 				<div class="top">
 					<span class="leftSide">Habitican Wardrobes and Cron Helper version info:</span>
@@ -3385,7 +3367,7 @@ td, th {
 				</div>
 				<div class="dataSectionFix">
 					<h3>Version Info:</h3><br><br>
-			    	<ol style="list-style-position: outside;"> 
+			    	<ol style="list-style-position: outside;">
 					<h4>Version 2.6</h4><br>
                         In the Settings menu you can choose to unequip all gear if you feel you are too strong. You can recall your former battle gear. <br>
                         If yor browser supports local storage, you can open the developer tools (F12) and go to Application - Local Storage - BattleGear and <br>
@@ -3419,11 +3401,11 @@ td, th {
 						<br>
 						The Cron Helper is integrated into Habitican Wardrobes to take advantage of the appropiate wardrobes for runnung cron and checking off tasks.<br>
 					</li>
-					<li> 
+					<li>
 						The menu item 'Data' now contains the entry 'Party-Cron-Times'. 'Party Cron Times' displays a list of your party members and their most recent 
 						cron time. <br>
 						This information may be useful to decide when a skill should be used. You may want to wait for the next party member to cron, before you 
-						cast your party buffs.  
+						cast your party buffs.
 					</li>
 					<li>
 						The Hard-Mode button has been replaced by a selection box. Values between 1 and 9 can now influence whether the wardrobe should reach the maximum number 
@@ -3436,7 +3418,7 @@ td, th {
 					<li>Display of Avatar on the skills-page and on equipping modal. </li>
 					<li>Fixed 'Return to Wardrobe Intelligence' button, not set to true on startup. </li>
 					<br>
-					<br> 
+					<br>
   			 		<h4>Version 2.0</h4><br>
 			   	 	<li>
 						You can now toggle the display between Wardrobes and Skills. 
@@ -3503,7 +3485,7 @@ td, th {
 		   			<br>
 		   			old Version 1.1<br>
 					Fixed bug:  Items that were lost due to death were suggested in the wardrobe, and couldn't be equipped. 
-					</ol>	
+					</ol>
 				</div>
 				<div class="bottom"> 
 					<span class="leftSide bottomSide">
@@ -3534,7 +3516,7 @@ td, th {
 						Please reload the page (but perhaps wait half an hour first in case Habitica is under heavy load).
 					</li>
             			<li>
-						If you're using Internet Explorer, try another browser. <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a> 
+						If you're using Internet Explorer, try another browser. <a href="https://www.google.com/intl/en/chrome/browser/">Chrome</a>
 						or <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a> will be more reliable.
 					</li>
         			</ul>
@@ -3545,7 +3527,7 @@ td, th {
 		<hr class="clear" />
 		<div id="buttons"></div>
 		<hr class="clear" />
-	
+
 		<div id="documentationAndForm">
    		 	<iframe src="null.htm" id="formPasswdSaveFix" name="formPasswdSaveFix" style="display:none">
 			</iframe><!-- DAMN YOU CHROME!! DAMN YOU!!!! http://stackoverflow.com/a/9116737 -->
