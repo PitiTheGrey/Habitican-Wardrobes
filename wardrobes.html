@@ -29,6 +29,7 @@ var url = '';
 var allowWerewolf = false;
 var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"};
 var costume = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"};
+let costumes = [];
 var preferences = {"hair": {"base": 0}, "chair": "none"};
 var blessing = {};
 var intelligence = {};
@@ -53,6 +54,28 @@ var equipCount = 0;
 var equipCountSkip = 0;
 var nameOfWardrobe = 'perception';
 var werewolf = false;
+let emptyCostume = {
+         'head':'',
+         'armor':'',
+         'weapon':'',
+         'shield':'',
+         'back':'',
+         'body':'',
+         'eyewear':'',
+         'headAccessory':'',
+         'preferences' : {'hair': {
+                                   'color': '',
+                                   'base': '',
+                                   'bangs': '',
+                                   'beard': '',
+                                   'mustache': '',
+                                   'flower': ''},
+                          'skin': '',
+                          'shirt': '',
+                          'chair': '',
+                          'size': '',
+                          'background': ''}
+        };
 var skills = {"rogue": {
 				"field1": {
 					"name": "Tools of the Trade",
@@ -347,6 +370,7 @@ async function doAjax(url, method, data){   // https://petetasker.com/using-asyn
 		$('#modalContent').html(error.responseText);
         $('#modal').show();
 	}
+    if (abort) {resul.abort();}
     return result.data;
 }; // end ajax
 
@@ -800,7 +824,7 @@ function getEquippedWardrobes() {
 				}// end if
 			}) // end forEach
 			return equipped;
-        }; // end of function compareGear
+        }; // end of function isWardrobe
 } // end of getEquippedWardrobes 
 
 function calculateAttributes(wardrobe) {
@@ -1073,9 +1097,9 @@ function calculateAttributes(wardrobe) {
 //////////////////////////////
 //// calculate and display Skills, Wardrobes and stats
 //////////////////////////////	
+
+
 ///////////push in skills container 
-
-
 
 getBluestTask();
 htmlStats =		'<div class="skills-Container">'; //needs class for toggling between Wardrobes and Skills FrontEnds
@@ -1104,7 +1128,6 @@ htmlStats +=	'current Mana points: ' + Math.floor(user.stats.mp) + '<br>' +
 				'<button type="button" id="add2" class="add">+</button>'+
 				'<br>'+
 				'</div>'+
-				
 				'<div id="skill3"><br>'+
 				'<button type="button" id="castSkill3" style="color: #2995cd"> Cast ' + skills[user.stats.class].field3.name + '</button>';
 				if (user.stats.class == 'rogue') {htmlStats += '<br>on ' + skills.rogue.field3.task};
@@ -1118,7 +1141,6 @@ htmlStats += 	'<br><br>'+
     			'<button type="button" id="add3" class="add">+</button>'+
 				'<br>'+
 				'</div>'+
-				
 				'<div id="skill4"><br>'+
 				'<button type="button" id="castSkill4" style="color: #2995cd"> Cast ' + skills[user.stats.class].field4.name + '</button>';
 				if (user.stats.class == 'rogue') {htmlStats += '<br>on ' + skills.rogue.field4.task};
@@ -1150,33 +1172,38 @@ htmlStats += '</div>'; //end div skills-Container
 
 // push in costumes-Container
 
+setCostumesArray();
+
+
 htmlStats +=	'<div class="costumes-Container">';
-htmlStats +=	'<div style="background-color: #c42870; border: solid; border-radius: 8px; border-color: rgb(79, 42, 147)">' +
-                '<h3>Your current Costume  <input id="UDC" type="submit" value="Undress"></h3><br>'+
-                '<div id="costume1">' +
-                '</div></div>';
-htmlStats +=	'<div style="background-color: #d70e14">'+
-                '<h3>Favorit Costume One  <input id="CS1" type="submit" value="dress up"></h3><br>'+
-                '<div id="costume2">' +
-                '</div></div>';
-htmlStats +=	'<div style="background-color: #c24d00">'+
-                '<h3>Favorit Costume Two  <input id="CS2" type="submit" value="dress up"></h3><br>'+
-                '<div id="costume3">' +
-                '</div></div>';
-htmlStats +=	'<div style="background-color: #9e650f">'+
+htmlStats +=	'<div style="height: 300px; background-color: #c42870; border: solid; border-radius: 10px; border-color: rgb(79, 42, 147)">' +
+                '<h3> Your current Costume  <input id="UDC" type="submit" value="Undress"></h3><br>'+
+                '<div id="costume0">' + costumeAvatar(costumes[0]) + '</div>' +
+                '</div>';
+htmlStats +=	'<div style="height: 300px; background-color: #d70e14">'+
+                '<h3> Favorite Costume One  <input id="CS1" type="submit" value="dress up"></h3><br>'+
+                '<div id="costume1">' + costumeAvatar(costumes[1]) + '</div>' +
+                '<div style="padding-left: 65px;"><br><input id="SC1" type="submit" value="put your costume here"></div>' +
+                '</div>';
+htmlStats +=	'<div style="height: 300px; background-color: #c24d00">'+
+                '<h3> Favorite Costume Two  <input id="CS2" type="submit" value="dress up"></h3><br>'+
+                '<div id="costume2">' + costumeAvatar(costumes[2]) + '</div>'+
+                '<div style="padding-left: 65px;"><br><input id="SC2" type="submit" value="put your costume here"></div>' +
+                '</div>';
+htmlStats +=	'<div style="height: 300px; background-color: #9e650f">'+
                 '<h3>Favorit Costume Three  <input id="CS3" type="submit" value="dress up"></h3><br>'+
-                '<div id="costume4">' +
-                '</div></div>';
-htmlStats +=	'<div style="background-color: #2b8363">'+
+                '<div id="costume3">' + costumeAvatar(costumes[3]) + '</div>'+
+                '<div style="padding-left: 65px;"><br><input id="SC3" type="submit" value="put your costume here"></div>' +
+                '</div>';
+htmlStats +=	'<div style="height: 300px; background-color: #2b8363">'+
                 '<h3>Dressing Room  <input id="CS4" type="submit" value="dress up"></h3><br>'+
+                '<div id="costume4">' + costumeAvatar(emptyCostume) + '</div>'+
+                //'<div style="padding-left: 65px;"><br><input id="SC4" type="submit" value="put your costume here"></div>' +
+                '</div>';
+htmlStats +=	'<div style="height: 300px; background-color: #167e87">'+
+                '<h3>Note</h3><br>'+
                 '<div id="costume5">' +
                 '</div></div>';
-htmlStats +=	'<div style="background-color: #167e87">'+
-                '<h3>Note</h3><br>'+
-                '<div id="costume6">' +
-                '</div></div>';
-
-
 htmlStats += '</div>'; //end div costumes-Container
 
 //////////end push in skills container
@@ -1357,6 +1384,7 @@ htmlStats += '</div>'; //end div costumes-Container
 		
 	$('#userStats').html(htmlStats);
 	addBorderToSelectedWardrobe();
+    adjustCostumesContainer();
 	$('#Overview').hide(); 	
 	
 //	} // end function drawFlexboxes; 
@@ -2061,63 +2089,48 @@ async function callForceCron() {
 
 function setCostumesArray() {
 
-    // costumes container shall be: 1: current costume, 2-4: 3 saved costumes, 5 actions field, 6: settings
-    //user.purchased.background.midnight_lake = true/false
-    //user.items.gear.costume [armor, head, shield, ba
-    let costumes = [];
-    let emptyCostume = {
-         'head':'',
-         'armor':'',
-         'weapon':'',
-         'shield':'',
-         'back':'',
-         'body':'',
-         'eyewear':'',
-         'headAccessory':'',
-         'preferences' : {'hair': {
-                                   'color': '',
-                                   'base': '',
-                                   'bangs': '',
-                                   'beard': '',
-                                   'mustache': '',
-                                   'flower': ''},
-                          'skin': '',
-                          'shirt': '',
-                          'chair': '',
-                          'size': '',
-                          'background': ''}
-        };
-    // costumes.length = 0 because of (see a couple of lines above: constumes = []; (remember: don't call this function too often!
-    for (var i = 0; i < 4; i++) {
-       costumes.push(costume);
-    }
+    costumes = [];
 
-    // store current costume data in costume[0]
+    for (var i = 0; i <= 4; i++) {
+       costumes.push(emptyCostume);
+    }
     
-    function saveCostume () {
-        let costume = JSON.parse(JSON.stringify(emptyCostume));
+    costumes[0] = saveCostume();
+    
+    // try to read costumes one...three from storage
+    for (var i = 1; i <= 3; i++) {
+        const str = storeData('costume' + i);
+        if (str && str != "0") {costumes[i] = JSON.parse(str);}
+    }
+    
+} // end function setCostumesArray
+    
+function saveCostume (obj) { // save costume in array of objects
+
+    if (obj) {
+        costume = JSON.parse(JSON.stringify(obj));
+    } else {
+        
+        costume = JSON.parse(JSON.stringify(emptyCostume));
+        
         ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key) {
             costume[key] = user.items.gear.costume[key];
         });
-        
+
         ['color', 'base', 'bangs', 'beard', 'mustache', 'flower'].forEach(function(key) {
-            console.log(key);
             costume.preferences.hair[key] = user.preferences.hair[key];
         });
-        
+
         ['skin', 'shirt', 'chair', 'size', 'background'].forEach(function(key) {
             costume.preferences[key] = user.preferences[key];
         });
-        return costume;
     }
+    return costume;
+} // end function saveCostume()
 
-    costumes[0] = saveCostume();
-    
-    console.log(JSON.stringify(costumes[0], null, 4));
-    
-    
-    function costumeAvatar(costume) {
-	    let avatarCostume = '<div style=" width: 90px; height: 90px;">'; //margin: -10px auto 0px 46px;
+
+function costumeAvatar(costume) {
+	    let avatarCostume = '<div style="padding-left: 70px; height: 147px; width: 140px;">'; //margin: -10px auto 0px 46px;
 
         if (costume.preferences.background) {avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/background_' + costume.preferences.background + '.png" style="position: absolute;">'};
 
@@ -2163,26 +2176,127 @@ function setCostumesArray() {
 
 	    avatarCostume += '</div>';
 	    return avatarCostume; // returns the html-code of the avatar
-    }
+} // end function costumeAvatar()
 
-    $('#costume1').html(costumeAvatar(costumes[0]));
     
+function adjustCostumesContainer(i) {
 
-/*    
-    const keys = Object.keys(costume);
-    keys.forEach(function(element){
-    if (!costume[element].hasOwnProperty()) {
-        costumes[0][element] = user.items.gear.costume[element];
+    // run first time without parameters => read LS
+    if (!i) {
+        for (let j=1; j<=3; j++) {
+            $('#costume' + j).html(costumeAvatar(costumes[j])); // no matter if empty or not!
+            if (isEmpty(costumes[j])) {
+                $('#SC' + j).prop('value', 'put your costume here');
+                $('#CS' + j).attr('disabled', true);
+            } else {
+                $('#SC' + j).prop('value', ' remove this costume ');
+                if (isEquipped(costumes[j])) {
+                    $('#CS' + j).attr('disabled', true);
+                } else {
+                   $('#CS' + j).attr('disabled', false);
+                }
+            }
+        }
     } else {
-        
-        
+    
+        // from empty container to a filled up one...
+        if (isEmpty(costumes[i])) {
+            if (isStored(costumes[i], i)) {
+                $('#modalContent').html('This costume is already stored in another locker');
+                $('#modal').show();
+                wait(2000).then(() => $('#modal').hide());
+            } else {
+                costumes[i] = saveCostume(costumes[0]);
+                storeData('costume' + i, costumes[i]);
+                $('#costume' + i).html(costumeAvatar(costumes[i]));
+                $('#SC' + i).prop('value', ' remove this costume ');
+                if (isEquipped(costumes[i])) {
+                    $('#CS' + i).attr('disabled', true)
+                } else {
+                    $('#CS' + i).attr('disabled', false);
+                }
+            }
+        } else {
+            if (confirm('You will remove this costume from your locker. \n2020 Are you sure?')) {
+                $('#SC' + i).prop('value', 'put your costume here');
+                $('#CS' + i).attr('disabled', true);
+                costumes[i] = JSON.parse(JSON.stringify(emptyCostume));
+                $('#costume' + i).html(costumeAvatar(emptyCostume));
+                storeData('costume' + i, 0);
+            }
+        }
     }
+}
+
+function iterateObject (obj, array) { // gets values for each key in a costumes-object and returns them in an array
+    Object.keys(obj).forEach(key => {
+        if (typeof(obj[key]) === 'object') {
+            iterateObject(obj[key], array);
+        } else {
+            array.push(obj[key]);
+        }
     })
-*/
+    return array;
+}
+
+function isStored(obj, number) {
+
+    let result = true;
+    let array;
+    let arr = [];
+    [1, 2, 3].forEach(function(i){
+        if (i != number) {arr.push(i);}
+    });
     
-    // loadStorage
+    if (isEmpty(costumes[arr[0]]) && isEmpty(costumes[arr[1]])) {  // MIGHT HAVE PROBLEMBS HERE IF CURRENT COSTUME IS EMPTY
+        result = false;
+        return result;
+    }
     
-} // end function setCostumesArray
+    array = [];
+    let one = iterateObject(costumes[0], array); // your current costume
+    array = [];
+    let two = iterateObject(costumes[arr[0]], array);
+    array = [];
+    let three = iterateObject(costumes[arr[1]], array);
+    
+    one = JSON.stringify(one);
+    two = JSON.stringify(two);
+    three = JSON.stringify(three);
+
+    if (one != two && one != three) {result = false;}
+    
+    return result;
+}
+
+function isEmpty(obj) {
+    let result = true;
+    let array = [];
+   
+    array = iterateObject(obj, array);
+    
+    array.forEach(function(i) {
+        if (i != "") {result = false;}
+    })
+    
+    return result;
+}
+
+function isEquipped(obj) {
+    let array;
+    let result = true;
+
+    array = [];
+    let one = iterateObject(obj, array);
+    
+    array = [];
+    let another = iterateObject(costumes[0], array);
+
+    one.forEach(function(i) {
+        if (!another.includes(i)) {result = false;}
+    })
+    return result;
+}
 
 async function abortFunction() {
 	console.log(abort);
@@ -2234,7 +2348,7 @@ async function hideDropdown() {
 
 			// modals
 			//if you click on anything except the modal itself or the "open modal" link, close the modal
- 			if ($(event.target).closest("#modalDataContent, #TAS, #HCT, #USR, #SKL, #DGR, #PAR").length == 0) {
+ 			if ($(event.target).closest("#modalDataContent, #TAS, #HCT, #USR, #SKL, #DGR, #DCS, #PAR").length == 0) {
 				$('#modalData').hide();
 			}
 			if ($(event.target).closest('#modalHelpContent, #HLP').length == 0) {
@@ -2362,7 +2476,7 @@ async function hideDropdown() {
 				}); // end of click
 	$('#DGR').click(function(){
 			getMaxGear();
-			var displayGear='<div>This is your equipment (battle gear / efficiency):</div><span style="font-size: x-small">' +
+			const displayGear='<div>This is your equipment (battle gear / efficiency):</div><span style="font-size: x-small">' +
 							'<div><pre>Best INT Gear: ' + JSON.stringify(intelligence, null, 4) + '</pre></div>' +
 							'<div><pre>Best PER Gear: ' + JSON.stringify(perception, null, 4) + '</pre></div>' +
 							'<div><pre>Best STR Gear: ' + JSON.stringify(strength, null, 4) + '</pre></div>' +
@@ -2375,8 +2489,8 @@ async function hideDropdown() {
 			$('#modalData').show();
 			}); // end of click
     $('#DCS').click(function(){
-            const displayCostumes = '<div>These are your costumes (for the looks):>/div><span style="font-size: x-small">';
-            for (var i = 0; i<=5; i++) {
+            let displayCostumes = '<div>These are your costumes (for the looks):</div><span style="font-size: x-small">';
+            for (let i = 0; i<=5; i++) {
                 displayCostumes += '<div><pre>Costume ' + i + ': ' + JSON.stringify(costumes[i], null, 4) + '</pre></div>';
             }
             $('.dataSectionxy').html(displayCostumes);
@@ -2402,7 +2516,7 @@ async function hideDropdown() {
         $('.costumes-Container').show();
         $('.wardrobes-Container').hide();
         hideDropdown();
-        if (!costumes) {setCostumesArray();}
+        //if (!costume) {setCostumesArray();}
         })
     $('#FES').click(function(){
         storeData("FrontEnd", "skills");
@@ -2411,6 +2525,16 @@ async function hideDropdown() {
         $('.wardrobes-Container').hide();
         hideDropdown();
         })
+    // buttons in the costumes-FrontEnd
+    $('#SC1').click(function(){
+        adjustCostumesContainer(1);
+    })
+    $('#SC2').click(function(){
+        adjustCostumesContainer(2);
+    })
+    $('#SC3').click(function(){
+        adjustCostumesContainer(3);
+    })
         
 	// buttons in the skill-FrontEnd
 	$('.add').click(function () {
@@ -3129,7 +3253,7 @@ td, th {
         <div id="rateLimiter" class="rateLimiter">
             <div class ="modal-content"> 
                 <p>30 requests allowed in 60 seconds. Limit reached. Please wait!</p>
-                <p id="rateLimiterCountdown">awaiting time frame</p>
+                <p id="rateLimiterCountdown">awaiting reset time</p>
             </div>
         </div>
 		<!-- small info modal for info about: loading, casting skills, equipping gear, etc.  -->
@@ -3338,7 +3462,16 @@ td, th {
 				<div class="dataSectionFix">
 					<h3>Version Info:</h3><br><br>
 			    	<ol style="list-style-position: outside;"> 
-					<h4>Version 2.6</h4><br>
+                    <h4>Version 3.0</h4><br>
+                        Habitican Wardrobes offers a new Front End. It's called 'Costumes'. Here you can see your current appearance and save it to 3 different
+                        lockers. If you want to save some other costume to your locker, please change your costume on Habitica, come back here and refresh the page. 
+                        You can choose to equip any of the three locer-costumes. An undressed costume will automatically wait for you in the Locker Room. But after
+                        a page refresh, 'Mummy' will have cleaned up everything and the Locker Room is empty. It is planned that if you turn into a werewolf, your 
+                        clothes can be found inside your Locker Room. <br>
+                        The Costumes-page might be a good means to attract players with the beauty concept in mind, rather than the efficiency. But on the other hand, 
+                        those players can learn about the efficiency part, because we have a clear separation between 1. Battle Gear (efficiency) and 2. Costume (for the looks).
+					    <br>The different Costumes are stored in the browsers local storage. Unfortunately the costumes cannot (yet) be synchronized between different divices.
+                    <h4>Version 2.6</h4><br>
                         New guidelines allow to communicate with the Habitica server 30 times a minute. The code takes care not to exceed this bottleneck.
                     <h4>Version 2.5.1</h4><br>
 						The new Lifeguard Whistle comes with an INT value of 12. The single checkbox for Aether Amulet and Comical Arrow had to be separated in two checkboxes, 
@@ -3470,7 +3603,7 @@ td, th {
 
 	<div id="innerBody">
 		<h1>Habitican Wardrobes<br>
-			<span>(v 2.6 July 2020)</span>
+			<span>(v 3.0 August 2020)</span>
 		</h1>
 		<div id="headerExtras"></div>
 		<hr class="clear">
