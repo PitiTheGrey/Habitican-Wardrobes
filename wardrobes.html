@@ -2178,7 +2178,104 @@ function costumeAvatar(costume) {
 	    return avatarCostume; // returns the html-code of the avatar
 } // end function costumeAvatar()
 
+
+function undress() {
+
+    let confirmed = true;
+    if (!isEmpty(costumes[4])) {
+        confirmed = false;
+        if (confirm('This will remove your costume from the Dressing Room. Are you sure?')) {
+            confirmed = true;
+        }
+     }
+     
+     if (confirmed) {
+        const i = isStored(costumes[0]);
+        console.log(i);
+        if (i !=0) {
+            $('#CS' + i).prop('disabled', false);
+            $('#SC' + i).prop('disabled', true); // in oder not to loose costume too easily
+        } else {
+            costumes[4] = saveCostume(costumes[0]);
+            $('#costume4').html(costumeAvatar(costumes[4]));
+            $('#CS4').prop('disabled', false);
+            storeData('costume4', costumes[4]);
+        }
+        costumes[0] = saveCostume(emptyCostume);
+        $('#costume0').html(costumeAvatar(costumes[0]));
+        $('#UDC').prop('disabled', true);
     
+        // it's a good idea to disable the "put your costume here" buttons, because now this will save empty costumes!
+        for (let i=1; i<=3; i++) {
+            if ($('#SC' + i).prop('value') == 'put your costume here') {
+                $('#SC' + i).prop('disabled', true);
+            }
+        }
+    }
+}
+
+function dressup(i) {
+    
+    if (!isEmpty(costumes[0])) {undress()};
+    
+    if (i == 4) { 
+        // 1. deal with cs0
+        $('#costume0').html(costumeAvatar(costumes[4]));
+        $('#UDC').prop('disabled', false);
+        costumes[0] = saveCostume(costumes[4]);
+        
+        // 2. deal with cs4        
+        $('#costume4').html(costumeAvatar(emptyCostume));
+        $('#CS4').prop('disabled', true);
+        storeData('costume4', 0);
+        costumes[4] = saveCostume(emptyCostume);
+        
+        // 3. deal with disabled buttons
+        for (let i=1; i<=3; i++) {
+            //if ($('#SC' + i).prop('value') == 'put your costume here') {
+                $('#SC' + i).prop('disabled', false);
+            //}
+        }
+    } else {
+        // 1. deal with cs0
+        $('#costume0').html(costumeAvatar(costumes[i]));
+        $('#UDC').prop('disabled', false);
+        costumes[0] = saveCostume(costumes[i]);
+        
+        // 2. deal with csi        
+        // $('#costume' + i).html(costumeAvatar(emptyCostume)); // no, leave it stored
+        $('#CS' + i).prop('disabled', true);
+        // storeData('costume' + i, 0); // no, leave it stored
+        // costumes[i] = saveCostume(emptyCostume); // no, leave it stored
+        
+        // 3. deal with disabled buttons
+        for (let i=1; i<=3; i++) {
+            if ($('#SC' + i).prop('value') == ' remove this costume ') {
+                $('#SC' + i).prop('disabled', false);
+            }
+        }
+        
+        
+        
+    }
+    
+    /*
+    // check if Dressing Room is empty - if not, user in danger of loosing ... ah. what: save it to LS
+    
+    // copy Your curent Costume to the Dressing Room
+    storeData('costume4', 0); 
+    $('#costume4').html(costumeAvatar(costumes[0]));
+    $('#CS4').prop('disabled', false);
+
+    $('#costume0').html(costumeAvatar(costumes[i]))
+    $('#CS' + i).prop('disabled', true);
+    $('#SC' + i).prop('disabled', true);
+    $('#UDC').prop('disabled', false);
+    
+    */
+    
+}
+
 function adjustCostumesContainer(i) {
 
     // run first time without parameters => read LS
@@ -2197,11 +2294,12 @@ function adjustCostumesContainer(i) {
                 }
             }
         }
+        if (isEmpty(costumes[4])) {$('#CS4').attr('disabled', true)};
     } else {
     
         // from empty container to a filled up one...
         if (isEmpty(costumes[i])) {
-            if (isStored(costumes[i], i)) {
+            if (isStored(costumes[i]) !=0) {
                 $('#modalContent').html('This costume is already stored in another locker');
                 $('#modal').show();
                 wait(2000).then(() => $('#modal').hide());
@@ -2239,34 +2337,28 @@ function iterateObject (obj, array) { // gets values for each key in a costumes-
     return array;
 }
 
-function isStored(obj, number) {
+function isStored(obj) { // return number of locker, where obj is stored (1, 2, 3)
 
-    let result = true;
-    let array;
+    let result = [];
     let arr = [];
-    [1, 2, 3].forEach(function(i){
-        if (i != number) {arr.push(i);}
-    });
     
-    if (isEmpty(costumes[arr[0]]) && isEmpty(costumes[arr[1]])) {  // MIGHT HAVE PROBLEMBS HERE IF CURRENT COSTUME IS EMPTY
-        result = false;
-        return result;
+    for (let i = 0; i <= 4; i++) {
+        let array = [];
+        let obj = iterateObject(costumes[i], array);
+        !isEmpty(obj) ? arr.push(JSON.stringify(obj)) : arr.push(0);
     }
-    
-    array = [];
-    let one = iterateObject(costumes[0], array); // your current costume
-    array = [];
-    let two = iterateObject(costumes[arr[0]], array);
-    array = [];
-    let three = iterateObject(costumes[arr[1]], array);
-    
-    one = JSON.stringify(one);
-    two = JSON.stringify(two);
-    three = JSON.stringify(three);
 
-    if (one != two && one != three) {result = false;}
-    
+    for (let i = 1; i <= 4; i++) {
+        if (arr[0] == arr[i] && arr[i] != 0) {
+            result.push(i);
+        }
+    }
+
+    result = parseInt(result[0]);
+    if (!result) {result=0;}
+
     return result;
+
 }
 
 function isEmpty(obj) {
@@ -2528,13 +2620,28 @@ async function hideDropdown() {
     // buttons in the costumes-FrontEnd
     $('#SC1').click(function(){
         adjustCostumesContainer(1);
-    })
+        })
     $('#SC2').click(function(){
         adjustCostumesContainer(2);
-    })
+        })
     $('#SC3').click(function(){
         adjustCostumesContainer(3);
-    })
+        })
+    $('#UDC').click(function(){
+        undress();
+        })
+    $('#CS1').click(function() {
+        dressup(1);
+        })
+    $('#CS2').click(function() {
+        dressup(2);
+        })
+    $('#CS3').click(function() {
+        dressup(3);
+        })        
+    $('#CS4').click(function(){
+        dressup(4);
+        })
         
 	// buttons in the skill-FrontEnd
 	$('.add').click(function () {
