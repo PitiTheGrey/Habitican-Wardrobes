@@ -346,14 +346,15 @@ async function fetchData() {
     parseData();
 }
 
-async function doAjax(url, method, data){   // https://petetasker.com/using-async-await-jquerys-ajax/
+async function doAjax(url, method, payload){   // https://petetasker.com/using-async-await-jquerys-ajax/
     if (!method) {method = 'POST';}
+    console.log(url + " // " + JSON.stringify(payload));
     let result;
     await rateLimit();
     try {
 		result = await $.ajax({
 			url: url,
-            data: data,
+            data: payload,
 			type: method,
 			dataType: 'json',
 			cache: false,
@@ -367,10 +368,10 @@ async function doAjax(url, method, data){   // https://petetasker.com/using-asyn
             }
 		});
 	} catch (error) {
-		$('#modalContent').html(error.responseText);
+		$('#modalContent').html(url + " / " + error.responseText + " / " + JSON.stringify(payload));
         $('#modal').show();
 	}
-    if (abort) {resul.abort();}
+    if (abort) {result.abort();}
     return result.data;
 }; // end ajax
 
@@ -2347,10 +2348,47 @@ function equipCostume(objNew, objOld) { // obj0 new costume, obj1 current (old) 
         obj.preferences[key] = select(objNew.preferences[key], objOld.preferences[key]);
     });
 
-    // return obj;
+    ajaxCostumes(obj);
+}
 
-    
-    
+async function ajaxCostumes(obj) {
+
+    let url;
+    let key;
+
+    for (let key of ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory']) {
+        if (obj[key] != '' && !obj[key].includes('_base_0')) {
+           //await doAjax('https://habitica.com/api/v3/user/equip/costume/' + obj[key], 'POST');
+        }
+    }
+
+    for (let key of ['color', 'base', 'bangs', 'beard', 'mustache', 'flower']) {
+        if (obj.preferences.hair[key] != '') {
+            //let pref = {'preferences' : {'hair': {[key]: 0}}};
+            let pref = {'preferences.hair': 0};
+            pref.preferences.hair.push({[key]: obj.preferences.hair[key]});
+            console.log("PREF: " + JSON.stringify(pref));
+            pref.preferences.hair[key] = obj.preferences.hair[key];
+            console.log("PREF: " + JSON.stringify(pref));
+            await doAjax('https://habitica.com/api/v3/user', 'PUT', pref);
+        }
+    }
+
+    for (let key of ['skin', 'shirt', 'chair', 'size']) {
+        if (obj.preferences[key] != '') {
+            let pref = {'preferences': {[key]: ''}};
+            pref.preferences[key] = obj.preferences[key];
+            console.log(JSON.stringify(pref));
+            await doAjax('https://habitica.com/api/v3/user', 'PUT', pref);
+        }
+    }
+
+        if (obj.preferences.background != '' && user.purchased.background[obj.preferences.background]) {
+            let pref = {'preferences': {'background': ''}};
+            pref.preferences.background = obj.preferences.background;
+            console.log(JSON.stringify(pref));
+            await doAjax('https://habitica.com/api/v3/user', 'PUT', pref);
+        }
 }
 
 function iterateObject (obj, array) { // gets values for each key in a costumes-object and returns them in an array
