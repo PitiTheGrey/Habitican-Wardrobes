@@ -1532,7 +1532,7 @@ async function werewolf() {
 			
 			
 	} else {
-		// not full moon or werewolf not allowed  // equipping old costume back 
+		// not full moon or werewolf not allowed  // equipping old costume back
 		if (user.items.gear.costume.armor == "armor_mystery_201509" && user.items.gear.costume.head == "head_mystery_201509") {
 				$('#modalContent').html('... you are no werewolf anymore!');
 				$('#modal').show();
@@ -2091,7 +2091,7 @@ function setCostumesArray() {
 
     costumes = [];
 
-    for (var i = 0; i <= 4; i++) {
+    for (var i = 0; i <= 5; i++) {
        costumes.push(emptyCostume);
     }
     
@@ -2104,13 +2104,14 @@ function setCostumesArray() {
     }
     
 } // end function setCostumesArray
-    
+
+
 function saveCostume (obj) { // save costume in array of objects
 
     if (obj) {
         costume = JSON.parse(JSON.stringify(obj));
     } else {
-        
+
         costume = JSON.parse(JSON.stringify(emptyCostume));
         
         ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key) {
@@ -2133,7 +2134,9 @@ function costumeAvatar(costume) {
 	    let avatarCostume = '<div style="padding-left: 70px; height: 147px; width: 140px;">'; //margin: -10px auto 0px 46px;
 
         if (costume.preferences.background) {avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/background_' + costume.preferences.background + '.png" style="position: absolute;">'};
-
+        
+        if (costume.back && !costume.back.includes('base_0')) {avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.back + '.png" class="costume">';}
+        
         ['chair', 'shirt', 'skin'].forEach(function(element) {
           if (costume.preferences[element]) {
             if (element == 'chair') {
@@ -2162,7 +2165,7 @@ function costumeAvatar(costume) {
           }
         });
 
-        ["eyewear", "headAccessory", "back", "body", "weapon", "armor", "head", "shield"].forEach (function(element) {
+        ["eyewear", "armor", "head", "weapon", "shield", "body", "headAccessory"].forEach (function(element) {
 		    if (costume[element]) {
                 if (!costume[element].includes('base_0')){
             	    if (element != "armor") {
@@ -2179,7 +2182,10 @@ function costumeAvatar(costume) {
 } // end function costumeAvatar()
 
 
-function undress() {
+function undress(str) { // str is being passed as "UDC" of "dressup" by the callers
+
+    if (str == 'UDC') {console.log("unequip everything");}
+    if (str == 'dressup') {console.log("do not unequip, but equip all new gear");}
 
     let confirmed = true;
     if (!isEmpty(costumes[4])) {
@@ -2188,8 +2194,9 @@ function undress() {
             confirmed = true;
         }
      }
-     
+
      if (confirmed) {
+        
         const i = isStored(costumes[0]);
         console.log(i);
         if (i !=0) {
@@ -2201,10 +2208,11 @@ function undress() {
             $('#CS4').prop('disabled', false);
             storeData('costume4', costumes[4]);
         }
+        // await unequip function .then =>
         costumes[0] = saveCostume(emptyCostume);
         $('#costume0').html(costumeAvatar(costumes[0]));
         $('#UDC').prop('disabled', true);
-    
+
         // it's a good idea to disable the "put your costume here" buttons, because now this will save empty costumes!
         for (let i=1; i<=3; i++) {
             if ($('#SC' + i).prop('value') == 'put your costume here') {
@@ -2216,15 +2224,18 @@ function undress() {
 
 function dressup(i) {
     
-    if (!isEmpty(costumes[0])) {undress()};
+    if (!isEmpty(costumes[0])) {undress('dressup')};
     
-    if (i == 4) { 
+    if (i == 4) { // Dressing Room
         // 1. deal with cs0
         $('#costume0').html(costumeAvatar(costumes[4]));
         $('#UDC').prop('disabled', false);
+        // await quip costume here .then=> go on
+        equipCostume(costumes[4]);
         costumes[0] = saveCostume(costumes[4]);
-        
-        // 2. deal with cs4        
+
+
+        // 2. deal with cs4
         $('#costume4').html(costumeAvatar(emptyCostume));
         $('#CS4').prop('disabled', true);
         storeData('costume4', 0);
@@ -2254,27 +2265,9 @@ function dressup(i) {
                 $('#SC' + i).prop('disabled', false);
             }
         }
-        
-        
-        
     }
-    
-    /*
-    // check if Dressing Room is empty - if not, user in danger of loosing ... ah. what: save it to LS
-    
-    // copy Your curent Costume to the Dressing Room
-    storeData('costume4', 0); 
-    $('#costume4').html(costumeAvatar(costumes[0]));
-    $('#CS4').prop('disabled', false);
-
-    $('#costume0').html(costumeAvatar(costumes[i]))
-    $('#CS' + i).prop('disabled', true);
-    $('#SC' + i).prop('disabled', true);
-    $('#UDC').prop('disabled', false);
-    
-    */
-    
 }
+
 
 function adjustCostumesContainer(i) {
 
@@ -2324,6 +2317,40 @@ function adjustCostumesContainer(i) {
             }
         }
     }
+}
+
+function equipCostume(objNew, objOld) { // obj0 new costume, obj1 current (old) costume
+    
+    function select(n, o) { // new costume / old costume (note: equipping gear a 2nd time will remove it)
+        /*  new:    a   a   a   -   -   -
+            old:    a   b   -   a   b   -
+            ==>     -   n   n   o   o   -
+            (no.    1   2   2   3   3   1) */
+
+        let result;
+        if (n == o) {result = ''} // 1
+        if (n && o != n) {result = n;} // 2
+        if (!n && o) {result = o;} // 3
+        return result;
+    }
+
+    let obj = saveCostume(emptyCostume);
+    if (!objOld) {objOld = saveCostume(costumes[0]);}
+
+    ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach (function(key) {
+        obj[key] = select(objNew[key], objOld[key]);
+    });
+    ['color', 'base', 'bangs', 'beard', 'mustache', 'flower'].forEach (function(key) {
+        obj.preferences.hair[key] = select(objNew.preferences.hair[key], objOld.preferences.hair[key]);
+    });
+    ['skin', 'shirt', 'chair', 'size', 'background'].forEach (function(key) {
+        obj.preferences[key] = select(objNew.preferences[key], objOld.preferences[key]);
+    });
+
+    // return obj;
+
+    
+    
 }
 
 function iterateObject (obj, array) { // gets values for each key in a costumes-object and returns them in an array
@@ -2628,18 +2655,22 @@ async function hideDropdown() {
         adjustCostumesContainer(3);
         })
     $('#UDC').click(function(){
-        undress();
+        undress('UDC');
         })
     $('#CS1').click(function() {
+        equipCostume(costumes[1]);
         dressup(1);
         })
     $('#CS2').click(function() {
+        equipCostume(costumes[2]);
         dressup(2);
         })
     $('#CS3').click(function() {
+        equipCostume(costumes[3]);
         dressup(3);
         })        
     $('#CS4').click(function(){
+        equipCostume(costumes[4]);
         dressup(4);
         })
         
