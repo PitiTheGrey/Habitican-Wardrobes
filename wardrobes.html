@@ -17,6 +17,7 @@ $(function() { // wraps around all our code to not pollute global namespace
 "use strict";
 let globalRemaining = 30;
 let globalReset = 60;
+let ajaxCount = 0;
 var abort = false;
 var content = {}; // Habitica's content
 var user = {}; // holds user content
@@ -65,11 +66,11 @@ let emptyCostume = {
          'headAccessory':'',
          'preferences' : {'hair': {
                                    'color': '',
-                                   'base': '',
-                                   'bangs': '',
-                                   'beard': '',
-                                   'mustache': '',
-                                   'flower': ''},
+                                   'base': 0,
+                                   'bangs': 0,
+                                   'beard': 0,
+                                   'mustache': 0,
+                                   'flower': 0},
                           'skin': '',
                           'shirt': '',
                           'chair': '',
@@ -316,7 +317,7 @@ async function rateLimit(remaining, reset) {
 
     if (!remaining) {
         // called prior to 'await $.ajax' (without parameters)
-        if (globalRemaining < 20) { // 20 for testing, 1 or to for production
+        if (globalRemaining < 2) { // 20 for testing, 1 or 2 for production
             const secondsToReset = Math.ceil((Date.parse(globalReset) - new Date().getTime()) / 1000);
             $('#rateLimiter').show();
             for (var i=0; i < secondsToReset; i++) {
@@ -339,22 +340,32 @@ async function fetchData() {
     $('#modal').show();
     
     user = await doAjax('https://habitica.com/api/v3/user', 'GET');
-    content = await doAjax('https://habitica.com/api/v3/content', 'GET');
+    console.log("content" + JSON.stringify(content).length);
+    if ($.isEmptyObject(content)) {content = await doAjax('https://habitica.com/api/v3/content', 'GET');}
     tasksFromDb = await doAjax('https://habitica.com/api/v3/tasks/user', 'GET');
-    
-    $('#modal').hide();
+
     parseData();
 }
 
-async function doAjax(url, method, payload){   // https://petetasker.com/using-async-await-jquerys-ajax/
+async function doAjax(url, method, preferences){   // https://petetasker.com/using-async-await-jquerys-ajax/
+
     if (!method) {method = 'POST';}
-    console.log(url + " // " + JSON.stringify(payload));
+    if (!preferences) {preferences = '';}
+    
+    ajaxCount ++;
+
+    $('#modal').show();
     let result;
+
     await rateLimit();
+    await wait(250);
+    
+    console.log(url + "{" + JSON.stringify(preferences) + "} // " + ajaxCount);
+    
     try {
 		result = await $.ajax({
 			url: url,
-            data: payload,
+            data: preferences, // comes as a string
 			type: method,
 			dataType: 'json',
 			cache: false,
@@ -365,15 +376,83 @@ async function doAjax(url, method, payload){   // https://petetasker.com/using-a
 			},
 			success: function(result, status, xhr){
                 rateLimit(xhr.getResponseHeader('x-ratelimit-remaining'), xhr.getResponseHeader('x-ratelimit-reset'));
+                writeBack(result.data);
             }
 		});
 	} catch (error) {
-		$('#modalContent').html(url + " / " + error.responseText + " / " + JSON.stringify(payload));
+		$('#modalContent').html(url + " / " + error.responseText);
         $('#modal').show();
 	}
     if (abort) {result.abort();}
     return result.data;
 }; // end ajax
+
+async function writeBack(returnData) {
+
+    await wait(50);
+    ajaxCount --;
+    
+    if (returnData.items && user) {
+
+        ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key) {
+            user.items.gear.costume[key] = returnData.items.gear.costume[key];
+            user.items.gear.equipped[key] = returnData.items.gear.equipped[key];
+        });
+
+        ['color', 'base', 'bangs', 'beard', 'mustache', 'flower'].forEach(function(key) {
+            user.preferences.hair[key] = returnData.preferences.hair[key];
+        });
+
+        ['skin', 'shirt', 'chair', 'size', 'background'].forEach(function(key) {
+            user.preferences[key] = returnData.preferences[key];
+        });
+
+    }
+    if (ajaxCount == 0) {
+        $('#modal').hide();
+    }
+}
+
+function costumeAvatar(costume) {
+	    let avatarCostume = '<div style="padding-left: 70px; height: 147px; width: 140px;">'; //margin: -10px auto 0px 46px;
+
+        if (costume.preferences.background) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/background_' + costume.preferences.background + '.png" style="position: absolute;">'
+        }
+        if (costume.preferences.chair != '' && costume.preferences.chair != 'none') {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/chair_' + costume.preferences.chair + '.png" class="costume">';
+        }
+        if (costume.back && !costume.back.includes('base_0')) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.back + '.png" class="costume">';
+        }
+        if (costume.preferences.shirt) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.preferences.size + '_shirt_' + user.preferences.shirt + '.png" class="costume">';
+        }
+        if (costume.preferences.skin) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/skin_' + costume.preferences.skin + '.png" class="costume">';
+        }
+        ['base', 'bangs', 'beard', 'mustache'].forEach(function(element){
+          if (costume.preferences.hair[element]) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_' + element + '_' + costume.preferences.hair[element] + '_' + costume.preferences.hair.color + '.png" class="costume">';
+    	    }
+        });
+        if (costume.armor && !costume.armor.includes('_base_0')) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/broad_' + costume.armor + '.png" class="costume">';
+        }
+        ["eyewear", "head", "weapon", "shield", "body", "headAccessory"].forEach (function(element) {
+		    if (costume[element]) {
+                if (!costume[element].includes('base_0')){
+					avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume[element] + '.png" class="costume">';
+	    		}
+		    }
+    	});
+
+        if (costume.preferences.hair.flower != 0) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_flower_' + costume.preferences.hair.flower + '.png" class="costume">';
+        }
+	    avatarCostume += '</div>';
+	    return avatarCostume; // returns the html-code of the avatar
+} // end function costumeAvatar()
 
 function storageFirstLoad() {
 	//front End (wardrobes and skills)
@@ -1475,6 +1554,8 @@ function limitAmountOfSkill(field) {
 
 
 async function werewolf() {
+    //costumes[5] = JSON.parse(storeData('costume5'));
+    // costumes.5 will store the current gear for going back after full-moon
 	var element = ['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'];
 	var costumeEquip = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''};
 	var costumeResult = {'head': '', 'armor': '', 'weapon': '', 'shield': '', 'headAccessory':'', 'back':'', 'body':'', 'eyewear':''}; // we need ..Result for writing back to user data
@@ -1502,67 +1583,38 @@ async function werewolf() {
 			$('#modal').show();
 			console.log("Full moon but werewolf costume not equipped");
 			// equipping werewolfCostume and unequip rest (hair would be cool, but there is no API. ... Oh, wait... there is!)
-			for (var i=0; i<=7; i++) {
-				costume[element[i]] = user.items.gear.costume[element[i]]; // costume holds the initially equipped costume items
-				if (element[i] == 'armor' && user.items.gear.costume.armor != "armor_mystery_201509"){
-					costumeEquip.armor = 'armor_mystery_201509';
-					costumeResult.armor = 'armor_mystery_201509';
-				} else
-				if (element[i] == 'head' && user.items.gear.costume.head != "head_mystery_201509"){
-					costumeEquip.head = 'head_mystery_201509';
-					costumeResult.head = 'head_mystery_201509';
-				} else
-				if (user.items.gear.costume[element[i]] != element+'_base_0') {
-					costumeEquip[element[i]] = user.items.gear.costume[element[i]]; // replace with same item to unequip
-					costumeResult[element[i]] = element[i] + '_base_0' // results in "nothing equipped"
-				}
-				
-			}   // end for i
-			storeData('Costume', JSON.stringify(costume));
-			await callCostume(costumeEquip, costumeResult);
-			// ... then handle preferences
-			preferences.hair.base = user.preferences.hair.base;
-			preferences.chair = user.preferences.chair;
-			storeData('Preferences', JSON.stringify(preferences));
-			preferencesEquip.hair.base = 0;
-            await doAjax('https://habitica.com/api/v3/user', 'PUT', {'preferences.hair.base': 0});
-			user.preferences.hair.base = 0;
-			await doAjax('https://habitica.com/api/v3/user', 'PUT', {'preferences.chair': 'none'});
-            user.preferences.chair = 'none';
+			costumes[5] = saveCostume(); // store current costume
+            storeData('costume5', costumes[5]);
+            costumes[0] = saveCostume(costumes[5]);
+            costumes[0].head = 'head_mystery_201509';
+            costumes[0].armor = 'armor_mystery_201509';
+            ['weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key){
+                costumes[0][key] = '';
+            })
+            costumes[0].preferences.chair = 'none';
+            equipCostume(costumes[0], costumes[5]);
+            while ($('#modal').is(':visible')) {
+                await wait(550);
+            }
+            $('#costume0').html(costumeAvatar(costumes[0]));
+            $('#costume5').html(costumeAvatar(costumes[5]));
+
 			} // end else (full moon but werewolf not equipped)
-			
-			
+
 	} else {
 		// not full moon or werewolf not allowed  // equipping old costume back
 		if (user.items.gear.costume.armor == "armor_mystery_201509" && user.items.gear.costume.head == "head_mystery_201509") {
 				$('#modalContent').html('... you are no werewolf anymore!');
 				$('#modal').show();
-				costume = JSON.parse(storeData('Costume'));
-				console.log(costume);
-				for (var i = 0; i <= 7; i++) {
-					if (costume[element[i]] != element[i]+'_base_0' && costume[element[i]] != user.items.gear.costume[element[i]]){
-						costumeEquip[element[i]] = costume[element[i]];
-						costumeResult[element[i]] = costume[element[i]];
-					}	
-					if (costume[element[i]] == user.items.gear.costume[element[i]]) { // item already equipped...
-						costumeEquip[element[i]] = costume[element[i]]; // skip equipping later in callCostume function
-						costumeResult[element[i]] = costume[element[i]];
-					}
-					if (costume[element[i]] == element[i]+'_base_0') { // nothing shall be equipped
-						costumeEquip[element[i]] = costume[element[i]]; // skip equipping later in callCostume function
-						costumeResult[element[i]] = element[i]+'_base_0';
-					}
-				} // end for i
-				await callCostume(costumeEquip, costumeResult);
-				preferences = storeData('Preferences');
-				// now to the preferences:
-				preferences = JSON.parse(storeData('Preferences'));
-				console.log(preferences.hair.base);
-                await doAjax('https://habitica.com/api/v3/user', 'PUT', {'preferences.hair.base': preferences.hair.base}); // url, method, data
-				user.preferences.hair.base = preferences.hair.base;
-				await doAjax('https://habitica.com/api/v3/user', 'PUT', {'preferences.chair': preferences.chair});
-				user.preferences.chair = preferences.chair;
-					
+				
+                equipCostume(costumes[5]);
+                while ($('#modal').is(':visible')) {
+                    await wait(550);
+                }
+                $('#costume0').html(costumeAvatar(costumes[5]));
+                costumes[5] = saveCostume(emptyCostume);
+                $('#costume5').html(costumeAvatar(costumes[5]));
+
 		} else {
 			console.log("Not full moon and werewolf costume not equipped -> write costume to localStorage");
 			for (var i = 0; i <= 7; i++) {
@@ -1601,42 +1653,6 @@ async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
   $('#modalContentAbort').hide();
 } // end callSkills...
 
-async function callCostume(costumeEquip, costumeResult) {
-		// {"preferences.hair.base":15} to ...api/v3/user PUT
-		var itemToEquip = '';
-		var typeOfItem = '';
-		equipCount = 0;
-		equipCountSkip = 0;
-		$('#modalContent').html('Equipping...');
-		$('#modal').show();
-		for (var i in ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]) {
-				var element = costumeEquip[["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"][i]];  // fromat gear: head_base_0 e.g.
-			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
-			typeOfItem = content.gear.flat[element].type; //eg displays: head (good)
-			// verify if item is already equipped
-			htmlEnd += content.gear.flat[element].text + '<br>';
-					
-			if (element == typeOfItem + '_base_0') {
-					equipCountSkip++;
-					if (equipCountSkip===Object.keys(costumeEquip).length){
-						$('#modalContent').html('already equipped');
-						await wait(1000);
-					} // end if equipCountSkip
-			} else {	
-				url = 'https://habitica.com/api/v3/user/equip/costume/' + element;
-				$('#modalContent').html('Equipping ' + itemToEquip + '<br>' + (equipCountSkip + equipCount + 1) + '/8<br>');
-				console.log(url);
-				await doAjax(url);
-				user.items.gear.costume[typeOfItem] = costumeResult[typeOfItem];
-				equipCount++;
-				await wait(500);
-			} // end else
-		}; // end for var i
-		await wait(50);
-		$('#modal').hide();
-		$('#modalContentAbort').hide();
-} // end function callCostume
-
 async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
 		
 		var itemToEquip = '';
@@ -1671,13 +1687,13 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 					wardrobeEquippedObject[typeOfItem] = itemToEquip;
 					addAvatar(wardrobeEquippedObject);
 					equipCount++;
-					await wait(1000);
+					//await wait(1000);
 				} // end else
 			} // end if undefined
 		} //end if abort
 		}; // end each
 		await wait(50);
-		$('#modal').hide();
+	//	$('#modal').hide();
 		$('#modalContentAbort').hide();
 		getEquippedWardrobes();
 } // end function callWardrobe 
@@ -2053,7 +2069,7 @@ function cronHelper() {
 } // end function cronHelper
 
 
-async function callForceCron() {
+async function callRunCron() {
 	
 	if (user.needsCron == false) {
 		$('#modalContent').html('Your Cron has not yet taken place.<br>Please try later!');
@@ -2086,7 +2102,7 @@ async function callForceCron() {
 			}
 		}
 	} // end if user.needsCron
-} // end async function callForceCron
+} // end async function callRunCron
 
 function setCostumesArray() {
 
@@ -2103,6 +2119,9 @@ function setCostumesArray() {
         const str = storeData('costume' + i);
         if (str && str != "0") {costumes[i] = JSON.parse(str);}
     }
+    
+    costumes[4] = JSON.parse(storeData('costume4'));
+    costumes[5] = JSON.parse(storeData('costume5'));
     
 } // end function setCostumesArray
 
@@ -2134,56 +2153,46 @@ function saveCostume (obj) { // save costume in array of objects
 function costumeAvatar(costume) {
 	    let avatarCostume = '<div style="padding-left: 70px; height: 147px; width: 140px;">'; //margin: -10px auto 0px 46px;
 
-        if (costume.preferences.background) {avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/background_' + costume.preferences.background + '.png" style="position: absolute;">'};
-        
-        if (costume.back && !costume.back.includes('base_0')) {avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.back + '.png" class="costume">';}
-        
-        ['chair', 'shirt', 'skin'].forEach(function(element) {
-          if (costume.preferences[element]) {
-            if (element == 'chair') {
-                if (costume.preferences.chair != 'none') {
-                    avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/chair_' + costume.preferences[element] + '.png" class="costume">';
-                }
-            } else {
-            if (element == 'shirt') {
-               avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.preferences.size + '_' + element + '_' + user.preferences[element] + '.png" class="costume">';
-            } else {
-               avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + element + '_' + costume.preferences[element] + '.png" class="costume">';
-            }
-          }
-          }
+        if (costume.preferences.background) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/background_' + costume.preferences.background + '.png" style="position: absolute;">'
+        }
+        if (costume.preferences.chair != '' && costume.preferences.chair != 'none') {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/chair_' + costume.preferences.chair + '.png" class="costume">';
+        }
+        if (costume.back && !costume.back.includes('base_0')) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.back + '.png" class="costume">';
+        }
+        if (costume.preferences.shirt) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.preferences.size + '_shirt_' + user.preferences.shirt + '.png" class="costume">';
+        }
+        if (costume.preferences.skin) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/skin_' + costume.preferences.skin + '.png" class="costume">';
+        }
+        ['base', 'bangs', 'beard', 'mustache'].forEach(function(element){
+          if (costume.preferences.hair[element]) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_' + element + '_' + costume.preferences.hair[element] + '_' + costume.preferences.hair.color + '.png" class="costume">';
+    	    }
         });
-
-        ['base', 'bangs', 'beard', 'mustache', 'flower'].forEach(function(element){
-          if (costume[element] || costume.preferences.hair[element]) {
-            if (costume.preferences.hair[element]) {
-                if (element === 'flower') {
-                    avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_' + element + '_' + costume.preferences.hair[element] + '.png" class="costume">';
-                } else {
-                    avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_' + element + '_' + costume.preferences.hair[element] + '_' + costume.preferences.hair.color + '.png" class="costume">';
-    	        }
-            }
-          }
-        });
-
-        ["eyewear", "armor", "head", "weapon", "shield", "body", "headAccessory"].forEach (function(element) {
+        if (costume.armor && !costume.armor.includes('_base_0')) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/broad_' + costume.armor + '.png" class="costume">';
+        }
+        ["eyewear", "head", "weapon", "shield", "body", "headAccessory"].forEach (function(element) {
 		    if (costume[element]) {
                 if (!costume[element].includes('base_0')){
-            	    if (element != "armor") {
-					    avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume[element] + '.png" class="costume">';
-	    			} else {
-		    			avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/broad_' + costume[element] + '.png" class="costume">';
-			    	}
-			    }
+					avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume[element] + '.png" class="costume">';
+	    		}
 		    }
     	});
 
+        if (costume.preferences.hair.flower != 0) {
+            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_flower_' + costume.preferences.hair.flower + '.png" class="costume">';
+        }
 	    avatarCostume += '</div>';
 	    return avatarCostume; // returns the html-code of the avatar
 } // end function costumeAvatar()
 
 
-function undress(str) { // str is being passed as "UDC" of "dressup" by the callers
+async function undress(str) { // str is being passed as "UDC" of "dressup" by the callers
 
     if (str == 'UDC') {console.log("unequip everything");}
     if (str == 'dressup') {console.log("do not unequip, but equip all new gear");}
@@ -2209,8 +2218,18 @@ function undress(str) { // str is being passed as "UDC" of "dressup" by the call
             $('#CS4').prop('disabled', false);
             storeData('costume4', costumes[4]);
         }
-        // await unequip function .then =>
-        costumes[0] = saveCostume(emptyCostume);
+        if (str == 'UDC') {
+            equipCostume(costumes[0], emptyCostume);
+            $('#modalContent').html('unequipping...');
+            $('#modal').show()
+
+            while ($('#modal').is(':visible')) {
+                await wait(550);
+            }
+            costumes[0] = saveCostume();
+            $('#costumes0').html(costumeAvatar(costumes[0]));
+        }
+
         $('#costume0').html(costumeAvatar(costumes[0]));
         $('#UDC').prop('disabled', true);
 
@@ -2229,12 +2248,10 @@ function dressup(i) {
     
     if (i == 4) { // Dressing Room
         // 1. deal with cs0
+        console.log(JSON.stringify(costumes[4]), null, 4);
         $('#costume0').html(costumeAvatar(costumes[4]));
         $('#UDC').prop('disabled', false);
-        // await quip costume here .then=> go on
-        equipCostume(costumes[4]);
         costumes[0] = saveCostume(costumes[4]);
-
 
         // 2. deal with cs4
         $('#costume4').html(costumeAvatar(emptyCostume));
@@ -2320,75 +2337,94 @@ function adjustCostumesContainer(i) {
     }
 }
 
-function equipCostume(objNew, objOld) { // obj0 new costume, obj1 current (old) costume
+function equipCostume(objNew, objOld, udc) { // obj0 new costume, obj1 current (old) costume
     
     function select(n, o) { // new costume / old costume (note: equipping gear a 2nd time will remove it)
         /*  new:    a   a   a   -   -   -
             old:    a   b   -   a   b   -
             ==>     -   n   n   o   o   -
-            (no.    1   2   2   3   3   1) */
+            (no.    1   2   2   3   3   1 */
 
+        if ((JSON.stringify(n)).includes('_base_0')) {n = '';}
+        if ((JSON.stringify(o)).includes('_base_0')) {o = '';}
+
+        
         let result;
+
         if (n == o) {result = ''} // 1
         if (n && o != n) {result = n;} // 2
         if (!n && o) {result = o;} // 3
+
         return result;
     }
 
     let obj = saveCostume(emptyCostume);
     if (!objOld) {objOld = saveCostume(costumes[0]);}
 
-    ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach (function(key) {
+    ['head', 'armor', 'shield', 'weapon', 'back', 'body', 'eyewear', 'headAccessory'].forEach (function(key) {
         obj[key] = select(objNew[key], objOld[key]);
+        if (obj[key] && key == 'weapon') {
+            if (content.gear.flat[obj[key]].hasOwnProperty('twoHanded')){
+                obj.shield = '';
+            }
+        }
     });
     ['color', 'base', 'bangs', 'beard', 'mustache', 'flower'].forEach (function(key) {
-        obj.preferences.hair[key] = select(objNew.preferences.hair[key], objOld.preferences.hair[key]);
+        obj.preferences.hair[key] = objNew.preferences.hair[key];
     });
     ['skin', 'shirt', 'chair', 'size', 'background'].forEach (function(key) {
-        obj.preferences[key] = select(objNew.preferences[key], objOld.preferences[key]);
+        obj.preferences[key] = objNew.preferences[key];
     });
 
-    ajaxCostumes(obj);
+    if (obj.preferences.hair.color == '') {obj.preferences.hair.color = "white"}; // fallback
+    if (udc == 'UDC') {costumeAvatar(obj);}
+
+    ajaxCostumes(obj, objNew, objOld);
 }
 
-async function ajaxCostumes(obj) {
+async function ajaxCostumes(obj, objNew, objOld) {
 
     let url;
     let key;
+    let val;
+    let pref;
 
-    for (let key of ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory']) {
-        if (obj[key] != '' && !obj[key].includes('_base_0')) {
-           //await doAjax('https://habitica.com/api/v3/user/equip/costume/' + obj[key], 'POST');
+    $('#modalContent').html("Costumes...");
+    $('modal').show();
+
+    for (let element of ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory']) {
+        if (obj[element] != '' && !obj[element].includes('_base_0')) {
+            $('#modalContent').html(element);
+            //console.log("ajax: " + obj[element] + " / new: " + objNew[element] + " / old: " + objOld[element]);
+            await doAjax('https://habitica.com/api/v3/user/equip/costume/' + obj[element], 'POST');
         }
     }
 
-    for (let key of ['color', 'base', 'bangs', 'beard', 'mustache', 'flower']) {
-        if (obj.preferences.hair[key] != '') {
-            //let pref = {'preferences' : {'hair': {[key]: 0}}};
-            let pref = {'preferences.hair': 0};
-            pref.preferences.hair.push({[key]: obj.preferences.hair[key]});
-            console.log("PREF: " + JSON.stringify(pref));
-            pref.preferences.hair[key] = obj.preferences.hair[key];
-            console.log("PREF: " + JSON.stringify(pref));
-            await doAjax('https://habitica.com/api/v3/user', 'PUT', pref);
+    pref = '{';
+    for (let element of ['skin', 'shirt', 'chair', 'size']) {
+        if (obj.preferences[element] != '') {
+            $('#modalContent').html("Skin, hair, ...");
+                key = 'preferences.' + element;
+                val = obj.preferences[element];
+                pref += '"' + key + '" : "' + val + '",';
         }
     }
 
-    for (let key of ['skin', 'shirt', 'chair', 'size']) {
-        if (obj.preferences[key] != '') {
-            let pref = {'preferences': {[key]: ''}};
-            pref.preferences[key] = obj.preferences[key];
-            console.log(JSON.stringify(pref));
-            await doAjax('https://habitica.com/api/v3/user', 'PUT', pref);
-        }
+    for (let element of ['color', 'base', 'bangs', 'beard', 'mustache', 'flower']) {
+        $('#modalContent').html("Skin, hair, ...");
+        key = 'preferences.hair.' + element;
+        val = obj.preferences.hair[element];
+        pref += '"' + key + '" : "' + val + '",';
     }
-
-        if (obj.preferences.background != '' && user.purchased.background[obj.preferences.background]) {
-            let pref = {'preferences': {'background': ''}};
-            pref.preferences.background = obj.preferences.background;
-            console.log(JSON.stringify(pref));
-            await doAjax('https://habitica.com/api/v3/user', 'PUT', pref);
+    if (obj.preferences.background != '' && user.purchased.background[obj.preferences.background]) {
+        key = 'preferences.background';
+        val = obj.preferences.background;
+        pref += '"' + key + '" : "' + val + '",';
         }
+
+    pref = pref.slice(0, -1) + '}';
+    await doAjax('https://habitica.com/api/v3/user', 'PUT', JSON.parse(pref));
+
 }
 
 function iterateObject (obj, array) { // gets values for each key in a costumes-object and returns them in an array
@@ -2517,7 +2553,7 @@ async function hideDropdown() {
 			if ($(event.target).closest("#modalVersionContent, #VER").length == 0) {
 				$('#modalVersion').hide();
 			}
-			if ($(event.target).closest('#modalCronHelperContent, #CRO, #forceCron').length == 0){
+			if ($(event.target).closest('#modalCronHelperContent, #CRO, #runCron').length == 0){
 				$('#modalCronHelper').hide();
 			}
 				
@@ -2656,8 +2692,8 @@ async function hideDropdown() {
 	$('#RFR').click(function(){
 			fetchData();
 			}); // end of click
-	$('#forceCron').click(function(){
-		callForceCron();
+	$('#runCron').click(function(){
+		callRunCron();
 		});
 
     $('#FEW').click(function(){
@@ -2800,7 +2836,7 @@ async function hideDropdown() {
     ////   Display the HTML    (within paseData)   ///////////////////////
     //////////////////////////////////////////////////////////////////////
 	$('#documentationAndForm').html(' ');
-    $('#modal').hide();
+    //$('#modal').hide();
     $('#output').html(htmlStart + html + htmlEnd);
 	prepareSkillAmounts();
 	if (frontEnd == 'wardrobes') {
@@ -3585,7 +3621,7 @@ td, th {
 						before scoring a task or before forcing cron.<br> 
 					</span>
 					<span class="rightSide bottomSide">
-						<button id="forceCron" style="border-radius: 8px; 
+						<button id="runCron" style="border-radius: 8px; 
 								   border: none;
 								   background-color: green; 
 								   color: white; 
