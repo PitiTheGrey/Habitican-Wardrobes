@@ -29,9 +29,7 @@ var apiToken = '';
 var url = '';
 var allowWerewolf = false;
 var legendary = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"};
-var costume = {"head":"head_special_2", "armor":"armor_special_2", "weapon":"weapon_special_2","shield":"shield_special_goldenknight"};
 let costumes = [];
-var preferences = {"hair": {"base": 0}, "chair": "none"};
 var blessing = {};
 var intelligence = {};
 var perception = {};
@@ -359,9 +357,7 @@ async function doAjax(url, method, preferences){   // https://petetasker.com/usi
 
     await rateLimit();
     await wait(250);
-    
-    console.log(url + "{" + JSON.stringify(preferences) + "} // " + ajaxCount);
-    
+
     try {
 		result = await $.ajax({
 			url: url,
@@ -412,6 +408,31 @@ async function writeBack(returnData) {
         $('#modal').hide();
     }
 }
+
+function saveCostume (obj) { // save costume in array of objects
+
+    let costume;
+
+    if (obj) {
+        costume = JSON.parse(JSON.stringify(obj));
+    } else {
+
+        costume = JSON.parse(JSON.stringify(emptyCostume));
+        
+        ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key) {
+            costume[key] = user.items.gear.costume[key];
+        });
+
+        ['color', 'base', 'bangs', 'beard', 'mustache', 'flower'].forEach(function(key) {
+            costume.preferences.hair[key] = user.preferences.hair[key];
+        });
+
+        ['skin', 'shirt', 'chair', 'size', 'background'].forEach(function(key) {
+            costume.preferences[key] = user.preferences[key];
+        });
+    }
+    return costume;
+} // end function saveCostume()
 
 function costumeAvatar(costume) {
 	    let avatarCostume = '<div style="padding-left: 70px; height: 147px; width: 140px;">'; //margin: -10px auto 0px 46px;
@@ -557,19 +578,18 @@ function storageFirstLoad() {
 			$('#cronHelperWardrobeForCron').prop('value', cronHelperWardrobeForCron);
 			storeData('Cron', cronHelperWardrobeForCron);
 		}
-		var isCostume = storeData('Costume');
-		if (isCostume == null) {
-			['head', 'armor', 'weapon', 'shield', 'headAccessory', 'back', 'body', 'eyewear'].forEach(function(element){
-				costume[element] = user.items.gear.costume[element];
-			})  
-			storeData('Costume', JSON.stringify(costume));
-		} 
-		var isPreferences = storeData('Preferences');
-		if (isPreferences == null) {
-			preferences.chair = user.preferences.chair;
-			preferences.hair.base = user.preferences.hair.base;
-			storeData('Preferences', JSON.stringify(preferences));
+		let isCostume = storeData('costume0');
+		if (!isCostume) {
+			costumes[0] = saveCostume();
+			storeData('costume0', JSON.stringify(costumes[0]));
 		}
+        for (let i = 1; i <=5; i++) {
+		    let isCostume = storeData('costume' + i);
+            if (!isCostume || isCostume == '0' || isCostume == null ) {
+                costumes[i] = saveCostume(emptyCostume);
+                storeData('costume' + i, costumes[i]);
+            }
+        }
 	
 	} // end of funciton storageFirstLoad
 
@@ -1281,7 +1301,7 @@ htmlStats +=	'<div style="height: 300px; background-color: #2b8363">'+
                 //'<div style="padding-left: 65px;"><br><input id="SC4" type="submit" value="put your costume here"></div>' +
                 '</div>';
 htmlStats +=	'<div style="height: 300px; background-color: #167e87">'+
-                '<h3>Note</h3><br>'+
+                '<h3> </h3><br>'+
                 '<div id="costume5">' +
                 '</div></div>';
 htmlStats += '</div>'; //end div costumes-Container
@@ -1617,12 +1637,7 @@ async function werewolf() {
 
 		} else {
 			console.log("Not full moon and werewolf costume not equipped -> write costume to localStorage");
-			for (var i = 0; i <= 7; i++) {
-				costume[element[i]] = user.items.gear.costume[element[i]];
-			} // end for i
-			preferences.hair.base = user.preferences.hair.base;
-			preferences.chair = user.preferences.chair; 
-			storeData('Preferences', JSON.stringify(preferences));
+			
 		} // end else werewolf not equipped
 	} // end else (not full moon)
 } // end function werewolf
@@ -1645,7 +1660,7 @@ async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
             $('#modalContent').html('casting: ' + name + '<br>' + i + '/' + amount + '<br>&nbsp;<br>&nbsp;');
         }
 		await doAjax(url);
-		await wait(2000);
+		//await wait(2000);
         user.stats.mp -= cost;
   	} // end if abort
   } //end for
@@ -2115,136 +2130,79 @@ function setCostumesArray() {
     costumes[0] = saveCostume();
     
     // try to read costumes one...three from storage
-    for (var i = 1; i <= 3; i++) {
+    for (var i = 1; i <= 5; i++) {
         const str = storeData('costume' + i);
         if (str && str != "0") {costumes[i] = JSON.parse(str);}
     }
     
-    costumes[4] = JSON.parse(storeData('costume4'));
-    costumes[5] = JSON.parse(storeData('costume5'));
-    
+    // costumes[4] = JSON.parse(storeData('costume4'));
+    // costumes[5] = JSON.parse(storeData('costume5'));
+
 } // end function setCostumesArray
 
-
-function saveCostume (obj) { // save costume in array of objects
-
-    if (obj) {
-        costume = JSON.parse(JSON.stringify(obj));
-    } else {
-
-        costume = JSON.parse(JSON.stringify(emptyCostume));
-        
-        ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key) {
-            costume[key] = user.items.gear.costume[key];
-        });
-
-        ['color', 'base', 'bangs', 'beard', 'mustache', 'flower'].forEach(function(key) {
-            costume.preferences.hair[key] = user.preferences.hair[key];
-        });
-
-        ['skin', 'shirt', 'chair', 'size', 'background'].forEach(function(key) {
-            costume.preferences[key] = user.preferences[key];
-        });
-    }
-    return costume;
-} // end function saveCostume()
-
-
-function costumeAvatar(costume) {
-	    let avatarCostume = '<div style="padding-left: 70px; height: 147px; width: 140px;">'; //margin: -10px auto 0px 46px;
-
-        if (costume.preferences.background) {
-            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/background_' + costume.preferences.background + '.png" style="position: absolute;">'
-        }
-        if (costume.preferences.chair != '' && costume.preferences.chair != 'none') {
-            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/chair_' + costume.preferences.chair + '.png" class="costume">';
-        }
-        if (costume.back && !costume.back.includes('base_0')) {
-            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.back + '.png" class="costume">';
-        }
-        if (costume.preferences.shirt) {
-            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume.preferences.size + '_shirt_' + user.preferences.shirt + '.png" class="costume">';
-        }
-        if (costume.preferences.skin) {
-            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/skin_' + costume.preferences.skin + '.png" class="costume">';
-        }
-        ['base', 'bangs', 'beard', 'mustache'].forEach(function(element){
-          if (costume.preferences.hair[element]) {
-            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_' + element + '_' + costume.preferences.hair[element] + '_' + costume.preferences.hair.color + '.png" class="costume">';
-    	    }
-        });
-        if (costume.armor && !costume.armor.includes('_base_0')) {
-            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/broad_' + costume.armor + '.png" class="costume">';
-        }
-        ["eyewear", "head", "weapon", "shield", "body", "headAccessory"].forEach (function(element) {
-		    if (costume[element]) {
-                if (!costume[element].includes('base_0')){
-					avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume[element] + '.png" class="costume">';
-	    		}
-		    }
-    	});
-
-        if (costume.preferences.hair.flower != 0) {
-            avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/hair_flower_' + costume.preferences.hair.flower + '.png" class="costume">';
-        }
-	    avatarCostume += '</div>';
-	    return avatarCostume; // returns the html-code of the avatar
-} // end function costumeAvatar()
-
-
-async function undress(str) { // str is being passed as "UDC" of "dressup" by the callers
-
-    if (str == 'UDC') {console.log("unequip everything");}
-    if (str == 'dressup') {console.log("do not unequip, but equip all new gear");}
-
+function confirmed() {
     let confirmed = true;
     if (!isEmpty(costumes[4])) {
         confirmed = false;
         if (confirm('This will remove your costume from the Dressing Room. Are you sure?')) {
             confirmed = true;
         }
-     }
+    }
+    return confirmed;
+}
 
-     if (confirmed) {
+
+
+async function undress(str) { // str is being passed as "UDC" of "dressup" by the callers
+
+    // if (str == 'UDC') {console.log("unequip everything");}
+    // if (str == 'dressup') {console.log("do not unequip, but equip all new gear");}
+
+    const i = isStored(costumes[0]);
+    if (i !=0) {
+        $('#CS' + i).prop('disabled', false);
+        $('#SC' + i).prop('disabled', true); // in oder not to loose costume too easily
+    } else {
+        costumes[4] = saveCostume(costumes[0]);
+        $('#costume4').html(costumeAvatar(costumes[4]));
+        $('#CS4').prop('disabled', false);
+        storeData('costume4', costumes[4]);
+    }
+    if (str == 'UDC') {
         
-        const i = isStored(costumes[0]);
-        console.log(i);
-        if (i !=0) {
-            $('#CS' + i).prop('disabled', false);
-            $('#SC' + i).prop('disabled', true); // in oder not to loose costume too easily
-        } else {
-            costumes[4] = saveCostume(costumes[0]);
-            $('#costume4').html(costumeAvatar(costumes[4]));
-            $('#CS4').prop('disabled', false);
-            storeData('costume4', costumes[4]);
+        $('#modalContent').html('unequipping...');
+        $('#modal').show();
+        let result;
+        equipCostume(costumes[0], emptyCostume);
+        
+        while (ajaxCount > 0) {
+            console.log(ajaxCount);
+            await wait(250);
         }
-        if (str == 'UDC') {
-            equipCostume(costumes[0], emptyCostume);
-            $('#modalContent').html('unequipping...');
-            $('#modal').show()
+        costumes[0] = saveCostume();
+        $('#costumes0').html(costumeAvatar(costumes[0]));
+        
+    }
 
-            while ($('#modal').is(':visible')) {
-                await wait(550);
-            }
-            costumes[0] = saveCostume();
-            $('#costumes0').html(costumeAvatar(costumes[0]));
-        }
+    $('#costume0').html(costumeAvatar(costumes[0]));
+    $('#UDC').prop('disabled', true);
 
-        $('#costume0').html(costumeAvatar(costumes[0]));
-        $('#UDC').prop('disabled', true);
-
-        // it's a good idea to disable the "put your costume here" buttons, because now this will save empty costumes!
-        for (let i=1; i<=3; i++) {
-            if ($('#SC' + i).prop('value') == 'put your costume here') {
-                $('#SC' + i).prop('disabled', true);
-            }
+    // it's a good idea to disable the "put your costume here" buttons, because now this will save empty costumes!
+    for (let i=1; i<=3; i++) {
+        if ($('#SC' + i).prop('value') == 'put your costume here') {
+            $('#SC' + i).prop('disabled', true);
         }
     }
+    return;
 }
 
 function dressup(i) {
     
-    if (!isEmpty(costumes[0])) {undress('dressup')};
+    //if (!confirmed()) {return;}
+    
+    //let confirmed = true;
+    
+    //if (!isEmpty(costumes[0])) {confirmed = undress('dressup')};
     
     if (i == 4) { // Dressing Room
         // 1. deal with cs0
@@ -2261,27 +2219,35 @@ function dressup(i) {
         
         // 3. deal with disabled buttons
         for (let i=1; i<=3; i++) {
-            //if ($('#SC' + i).prop('value') == 'put your costume here') {
                 $('#SC' + i).prop('disabled', false);
-            //}
         }
-    } else {
+    } else { // any other locker
         // 1. deal with cs0
         $('#costume0').html(costumeAvatar(costumes[i]));
         $('#UDC').prop('disabled', false);
         costumes[0] = saveCostume(costumes[i]);
         
-        // 2. deal with csi        
+        // 2. deal with csi
         // $('#costume' + i).html(costumeAvatar(emptyCostume)); // no, leave it stored
         $('#CS' + i).prop('disabled', true);
         // storeData('costume' + i, 0); // no, leave it stored
-        // costumes[i] = saveCostume(emptyCostume); // no, leave it stored
         
         // 3. deal with disabled buttons
         for (let i=1; i<=3; i++) {
             if ($('#SC' + i).prop('value') == ' remove this costume ') {
                 $('#SC' + i).prop('disabled', false);
             }
+        }
+
+        // 4. deal with Dressing Room
+        let obj = saveCostume();
+        console.log(JSON.stringify(obj));
+        alert(isStored(obj));
+        if (isStored(obj) > 0) {
+            costumes[4] = saveCostume(obj);
+            $('#costume4').html(costumeAvatar(costumes[4]));
+            storeData('costume4', costumes[4]);
+            $('#SC4').prop('disabled', false);
         }
     }
 }
@@ -2291,7 +2257,7 @@ function adjustCostumesContainer(i) {
 
     // run first time without parameters => read LS
     if (!i) {
-        for (let j=1; j<=3; j++) {
+        for (let j=1; j<=5; j++) {
             $('#costume' + j).html(costumeAvatar(costumes[j])); // no matter if empty or not!
             if (isEmpty(costumes[j])) {
                 $('#SC' + j).prop('value', 'put your costume here');
@@ -2376,8 +2342,8 @@ function equipCostume(objNew, objOld, udc) { // obj0 new costume, obj1 current (
         obj.preferences[key] = objNew.preferences[key];
     });
 
-    if (obj.preferences.hair.color == '') {obj.preferences.hair.color = "white"}; // fallback
-    if (udc == 'UDC') {costumeAvatar(obj);}
+    if (obj.preferences.hair.color == '') {console.log("fallback"); obj.preferences.hair.color = user.preferences.hair.color}; // fallback
+    if (udc == 'UDC') {$('#costume0').html(costumeAvatar(obj));}
 
     ajaxCostumes(obj, objNew, objOld);
 }
@@ -2428,6 +2394,9 @@ async function ajaxCostumes(obj, objNew, objOld) {
 }
 
 function iterateObject (obj, array) { // gets values for each key in a costumes-object and returns them in an array
+
+    if (!obj) {return;}
+
     Object.keys(obj).forEach(key => {
         if (typeof(obj[key]) === 'object') {
             iterateObject(obj[key], array);
@@ -2440,6 +2409,7 @@ function iterateObject (obj, array) { // gets values for each key in a costumes-
 
 function isStored(obj) { // return number of locker, where obj is stored (1, 2, 3)
 
+    if (!obj) {return;}
     let result = [];
     let arr = [];
     
@@ -2463,6 +2433,7 @@ function isStored(obj) { // return number of locker, where obj is stored (1, 2, 
 }
 
 function isEmpty(obj) {
+    if (!obj) {return;}
     let result = true;
     let array = [];
    
@@ -2729,23 +2700,33 @@ async function hideDropdown() {
         adjustCostumesContainer(3);
         })
     $('#UDC').click(function(){
-        undress('UDC');
+        if (confirmed()) {
+            undress('UDC');
+        }
         })
     $('#CS1').click(function() {
-        equipCostume(costumes[1]);
-        dressup(1);
+        if (confirmed()) {
+            equipCostume(costumes[1]);
+            dressup(1);
+            }
         })
     $('#CS2').click(function() {
-        equipCostume(costumes[2]);
-        dressup(2);
+        if (confirmed()) {
+            equipCostume(costumes[2]);
+            dressup(2);
+            }
         })
     $('#CS3').click(function() {
-        equipCostume(costumes[3]);
-        dressup(3);
-        })        
+        if (confirmed()) {
+            equipCostume(costumes[3]);
+            dressup(3);
+            }
+        })
     $('#CS4').click(function(){
-        equipCostume(costumes[4]);
-        dressup(4);
+        if (confirmed()) {
+            equipCostume(costumes[4]);
+            dressup(4);
+            }
         })
         
 	// buttons in the skill-FrontEnd
@@ -2821,7 +2802,6 @@ async function hideDropdown() {
 		castOnBluestTask = JSON.stringify($('#castOnBluestTask').is(':checked'));
 		storeData("Bluest Task", castOnBluestTask);
 		displayTasks();
-		console.log(castOnBluestTask);
 	})
 	$('#selectTask').on('change', function(){
 		skills[user.stats.class].field2.task = $('#selectTask option:selected').text();
@@ -3626,7 +3606,7 @@ td, th {
 								   background-color: green; 
 								   color: white; 
 								   font-size: large;">
-							Force Cron
+							Run Cron
 						</button>
 						&nbsp;
 					</span> 
@@ -3676,13 +3656,15 @@ td, th {
 			    	<ol style="list-style-position: outside;"> 
                     <h4>Version 3.0</h4><br>
                         Habitican Wardrobes offers a new Front End. It's called 'Costumes'. Here you can see your current appearance and save it to 3 different
-                        lockers. If you want to save some other costume to your locker, please change your costume on Habitica, come back here and refresh the page. 
+                        lockers. If you want to save a costume to your locker, please change your costume on Habitica, come back here and refresh the page and use a button
+                        to put your costume into a free locker. <br>
                         You can choose to equip any of the three locer-costumes. An undressed costume will automatically wait for you in the Locker Room. But after
-                        a page refresh, 'Mummy' will have cleaned up everything and the Locker Room is empty. It is planned that if you turn into a werewolf, your 
-                        clothes can be found inside your Locker Room. <br>
-                        The Costumes-page might be a good means to attract players with the beauty concept in mind, rather than the efficiency. But on the other hand, 
+                        a page refresh, 'Mummy' will have cleaned up everything and the Locker Room is empty. If full moon turns you into a werewolf, you can find
+                        your lost costume in the last locker.<br>
+                        The Costumes-page might attract players with the beauty concept in mind, rather than the efficiency. But on the other hand, 
                         those players can learn about the efficiency part, because we have a clear separation between 1. Battle Gear (efficiency) and 2. Costume (for the looks).
-					    <br>The different Costumes are stored in the browsers local storage. Unfortunately the costumes cannot (yet) be synchronized between different divices.
+                        <br>The different Costumes are stored in the browsers local storage. Unfortunately the costumes cannot (yet) be synchronized between different divices.
+                        <br>Habitican Wardrobes now complies with Habiticas rate-limit. You are allowed to do 30 calls to the Habitica server within 60s.
                     <h4>Version 2.6</h4><br>
                         New guidelines allow to communicate with the Habitica server 30 times a minute. The code takes care not to exceed this bottleneck.
                     <h4>Version 2.5.1</h4><br>
@@ -3711,7 +3693,7 @@ td, th {
 					<h4>Version 2.1 and 2.2</h4><br>
 					<li>
 						'Cron Helper' allows you to take care of all of your accidentally unchecked task entries, even though Habitica's cron time has already expired.<br>
-						After all desired tasks have been ticked off, the cron process can be triggered via the 'force cron' button. It's required that Habitica's cron time has already expired, though.
+						After all desired tasks have been ticked off, the cron process can be triggered via the 'run cron' button. It's required that Habitica's cron time has already expired, though.
 						<br>
 						The Cron Helper is integrated into Habitican Wardrobes to take advantage of the appropiate wardrobes for runnung cron and checking off tasks.<br>
 					</li>
@@ -3844,7 +3826,7 @@ td, th {
 		<hr class="clear">
 	
 		<div id="documentationAndForm">
-   		 	<iframe src="./wardrobes27_files/null.html" id="formPasswdSaveFix" name="formPasswdSaveFix" style="display:none">
+   		 	<iframe src="null.html" id="formPasswdSaveFix" name="formPasswdSaveFix" style="display:none">
 			</iframe><!-- DAMN YOU CHROME!! DAMN YOU!!!! http://stackoverflow.com/a/9116737 -->
 			<form id="userApiDetailsForm" method="POST" action="https://www.abbhh.de/wardrobes.html" target="formPasswdSaveFix">
 				<fieldset>
