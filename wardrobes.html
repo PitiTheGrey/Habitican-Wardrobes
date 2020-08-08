@@ -378,6 +378,9 @@ async function doAjax(url, method, preferences){   // https://petetasker.com/usi
 	} catch (error) {
 		$('#modalContent').html(url + " / " + error.responseText);
         $('#modal').show();
+        ajaxCount--;
+        await wait(2000);
+        $('#modal').hide();
 	}
     if (abort) {result.abort();}
     return result.data;
@@ -590,7 +593,7 @@ function storageFirstLoad() {
                 storeData('costume' + i, costumes[i]);
             }
         }
-	
+
 	} // end of funciton storageFirstLoad
 
 
@@ -1670,18 +1673,17 @@ async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
 
 async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intelligence, perception or legendary, each with head, armor, shield and weapon
 		
-		var itemToEquip = '';
-		var typeOfItem = '';
-		equipCount = 0;
-		equipCountSkip = 0; 
-		$('#modalContentAbort').css("top", "32%");
-		$('#modalContentAbort').show(); 
-		$('#modalContent').html('Equipping...');
-		$('#modal').show();
-		
-		
-		for (var i in ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]) {
-			if (!abort) { 
+	var itemToEquip = '';
+	var typeOfItem = '';
+	equipCount = 0;
+	equipCountSkip = 0; 
+	$('#modalContentAbort').css("top", "32%");
+	//$('#modalContentAbort').show();
+	$('#modalContent').html('Equipping...');
+	//$('#modal').show();
+
+	for (var i in ["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"]) {
+		if (!abort) { 
 			itemToEquip = wardrobe[["head", "armor", "weapon", "shield", "headAccessory", "back", "body", "eyewear"][i]];  // fromat gear: head_base_0 e.g.
 			// First determine the type [Helm, Armor ...] of the Item that is goint to be equipped (The type is taken from Habitica's content)
 			if (typeof(content.gear.flat[itemToEquip]) != "undefined") {
@@ -1692,25 +1694,27 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 					equipCountSkip++;
 					if (equipCountSkip===Object.keys(wardrobe).length){ // if equipCountSkip = amount of inventory in wardrobe
 						$('#modalContent').html('already equipped');
-						await wait(1000);
+						//await wait(1000);
 					} // end if equipCountSkip
 				} else {
 					url = 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip;
 					$('#modalContent').html('Equipping wardrobe ' + nameOfWardrobe + '<br>' + (equipCountSkip + equipCount + 1) + '/8<br>' + avatar + '<br>');
-					await doAjax(url);
+					$('#modal').show();
+                    $('#modalContentAbort').show();
+                    await wait(1000);
+                    await doAjax(url);
 					user.items.gear.equipped[typeOfItem] = itemToEquip;
 					wardrobeEquippedObject[typeOfItem] = itemToEquip;
 					addAvatar(wardrobeEquippedObject);
 					equipCount++;
-					//await wait(1000);
 				} // end else
 			} // end if undefined
-		} //end if abort
-		}; // end each
-		await wait(50);
-	//	$('#modal').hide();
-		$('#modalContentAbort').hide();
-		getEquippedWardrobes();
+	    } //end if abort
+	}; // end each
+	await wait(50);
+	// $('#modal').hide();
+	$('#modalContentAbort').hide();
+	getEquippedWardrobes();
 } // end function callWardrobe 
  
 async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, field){ // amountOfSkill, API, "eg. Tools of the Trade, 25, perception, Object
@@ -1720,7 +1724,6 @@ async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, fi
 				} else {
 					console.log("calling wardrobe " + nameOfWardrobe);
 					await callWardrobe(wardrobe, nameOfWardrobe); 	// wardrobe ist Object here
-					
 				}
 				$('#modalContent').html('Casting...');
 				$('#modal').show();	
@@ -1874,6 +1877,7 @@ async function scoreTaskDoAjax(id, direction, row){
 		
 		// now try ajax
         await rateLimit();
+        await wait(1000);
         let result;
         try {
 			result = await $.ajax({
@@ -2129,7 +2133,7 @@ function setCostumesArray() {
     
     costumes[0] = saveCostume();
     
-    // try to read costumes one...three from storage
+    // try to read costumes one...five from storage
     for (var i = 1; i <= 5; i++) {
         const str = storeData('costume' + i);
         if (str && str != "0") {costumes[i] = JSON.parse(str);}
@@ -2159,6 +2163,7 @@ async function undress(str) { // str is being passed as "UDC" of "dressup" by th
     // if (str == 'dressup') {console.log("do not unequip, but equip all new gear");}
 
     const i = isStored(costumes[0]);
+    console.log("undress: costume is also stored in slot " +i);
     if (i !=0) {
         $('#CS' + i).prop('disabled', false);
         $('#SC' + i).prop('disabled', true); // in oder not to loose costume too easily
@@ -2197,14 +2202,14 @@ async function undress(str) { // str is being passed as "UDC" of "dressup" by th
 }
 
 function dressup(i) {
-    
-    //if (!confirmed()) {return;}
-    
-    //let confirmed = true;
-    
-    //if (!isEmpty(costumes[0])) {confirmed = undress('dressup')};
-    
+
+    let obj = saveCostume(costumes[0]); // for later ... 4 (make copy of current gear)
+    console.log("old costume 0: " + JSON.stringify(obj));
+
     if (i == 4) { // Dressing Room
+    
+        // we additionally have to check: If costumes.0 is different from costumes.4 then we need a warning
+    
         // 1. deal with cs0
         console.log(JSON.stringify(costumes[4]), null, 4);
         $('#costume0').html(costumeAvatar(costumes[4]));
@@ -2225,29 +2230,32 @@ function dressup(i) {
         // 1. deal with cs0
         $('#costume0').html(costumeAvatar(costumes[i]));
         $('#UDC').prop('disabled', false);
-        costumes[0] = saveCostume(costumes[i]);
+        costumes[0] = saveCostume(costumes[i]); // is this too early?
         
         // 2. deal with csi
-        // $('#costume' + i).html(costumeAvatar(emptyCostume)); // no, leave it stored
         $('#CS' + i).prop('disabled', true);
-        // storeData('costume' + i, 0); // no, leave it stored
-        
+        for (let j=1; j<=3; j++) {
+            if (j != i) {
+                $('#CS' + j).prop('disabled', false);
+            }
+        }
+
         // 3. deal with disabled buttons
-        for (let i=1; i<=3; i++) {
-            if ($('#SC' + i).prop('value') == ' remove this costume ') {
-                $('#SC' + i).prop('disabled', false);
+        for (let j=1; j<=3; j++) {
+            if ($('#SC' + j).prop('value') == ' remove this costume ') {
+                $('#SC' + j).prop('disabled', false);
             }
         }
 
         // 4. deal with Dressing Room
-        let obj = saveCostume();
-        console.log(JSON.stringify(obj));
-        alert(isStored(obj));
-        if (isStored(obj) > 0) {
+        const is = isStored(obj); // retunrs i as of the pressed button instead of comparing if 0 is equipped somewhere else
+        
+        if (is == 0) { // this pigi does not work!
             costumes[4] = saveCostume(obj);
             $('#costume4').html(costumeAvatar(costumes[4]));
             storeData('costume4', costumes[4]);
-            $('#SC4').prop('disabled', false);
+            $('#CS4').prop('disabled', false);
+            // console.log("is Sotred: " + is + " i=" + i);
         }
     }
 }
@@ -2343,7 +2351,7 @@ function equipCostume(objNew, objOld, udc) { // obj0 new costume, obj1 current (
     });
 
     if (obj.preferences.hair.color == '') {console.log("fallback"); obj.preferences.hair.color = user.preferences.hair.color}; // fallback
-    if (udc == 'UDC') {$('#costume0').html(costumeAvatar(obj));}
+    if (udc == 'UDC') {$('#costume0').html(costumeAvatar(obj));} // should this be left to dressup()?
 
     ajaxCostumes(obj, objNew, objOld);
 }
@@ -2404,6 +2412,7 @@ function iterateObject (obj, array) { // gets values for each key in a costumes-
             array.push(obj[key]);
         }
     })
+    //console.log("iterate: " + array);
     return array;
 }
 
@@ -2424,7 +2433,6 @@ function isStored(obj) { // return number of locker, where obj is stored (1, 2, 
             result.push(i);
         }
     }
-
     result = parseInt(result[0]);
     if (!result) {result=0;}
 
@@ -2438,9 +2446,9 @@ function isEmpty(obj) {
     let array = [];
    
     array = iterateObject(obj, array);
-    
+
     array.forEach(function(i) {
-        if (i != "") {result = false;}
+        if (i != "" && i != 0) {result = false;}
     })
     
     return result;
@@ -2658,6 +2666,7 @@ async function hideDropdown() {
                 displayCostumes += '<div><pre>Costume ' + i + ': ' + JSON.stringify(costumes[i], null, 4) + '</pre></div>';
             }
             $('.dataSectionxy').html(displayCostumes);
+            $('.rightSide .bottomSide').html("tes..................t");
             $('#modalData').show();
             });
 	$('#RFR').click(function(){
@@ -2723,10 +2732,8 @@ async function hideDropdown() {
             }
         })
     $('#CS4').click(function(){
-        if (confirmed()) {
-            equipCostume(costumes[4]);
-            dressup(4);
-            }
+        equipCostume(costumes[4]);
+        dressup(4);
         })
         
 	// buttons in the skill-FrontEnd
@@ -2816,7 +2823,6 @@ async function hideDropdown() {
     ////   Display the HTML    (within paseData)   ///////////////////////
     //////////////////////////////////////////////////////////////////////
 	$('#documentationAndForm').html(' ');
-    //$('#modal').hide();
     $('#output').html(htmlStart + html + htmlEnd);
 	prepareSkillAmounts();
 	if (frontEnd == 'wardrobes') {
@@ -3462,6 +3468,7 @@ td, th {
 					<span class="close">× &nbsp;</span>
 				</div>
 				<div class="dataSectionFix">
+                    <h3>Equipment - Efficiancy</h3>
 					<p>Automatic Selection of Gear:</p>
 					<p>Set threshold
 						<select id="threshold" onchange="console.log(value)">
@@ -3500,8 +3507,13 @@ td, th {
 					<p style="font-size: x-small">
 						Both Aether Amulet and Comical Arrow provide high attribute points for STR. Regardless of other setting, "force Aether Amulet and Comical Arrow" 
 						equips both items, provided they are in the iventory. This does not apply to wardrobe PER.
-					</p>	
+					</p>
 					<hr>
+                    <h3>Costumes - For the looks</h3>
+                    <input type="text" name="google sheet" id="googleSheet" value="">
+                    <input type="text" name="sheet name" id="sheet" value="">
+                    <input type="button" id="storeGoogleSheet" value="store">
+                    <h3>Misc</h3>
 					<p>Cron Helper: </p>
 					<p>Wardrobe for Tasks: 
 					  <select id="cronHelperWardrobeForTasks" onchange="console.log(value)">
@@ -3524,8 +3536,8 @@ td, th {
 						</select>
 					</p>
 					<p style="font-size: x-small">
-						Cron Helper can change wardrobes when running cron automatically, depending on the setting made here. <br> 
-						For players who do not wish to change equipment using the Cron Helper, this procedure can be disabled. <br> 
+						Cron Helper can change wardrobes when running cron automatically, depending on the setting made here. <br>
+						For players who do not wish to change equipment using the Cron Helper, this procedure can be disabled. <br>
 						CAUTION: Running cron with the help of automated change of wardrobes will change the users battle gear. Once equipped, there is no way to determine previous state!
 					</p>
 			
@@ -3541,11 +3553,8 @@ td, th {
 						The author agreed upon Habitican Wardrobes to host the werewolf feature as well. 
 						If you choose to allow the Werewolf equipper, you will get the costume equipped on days with full moon, and get your previously worn costume back on
 						the following day. The feature is only available if you own the werewolf costume. </p>
-					<p id="werewolf">Allow Werewolf <input id="allowWerewolf" type="checkbox" autocomplete="off"></p>	
-						     
-					
-										
-				</div>					
+					<p id="werewolf">Allow Werewolf <input id="allowWerewolf" type="checkbox" autocomplete="off"></p>
+				</div>
 			</div>
 		</div>
 
