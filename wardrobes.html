@@ -1782,17 +1782,18 @@ async function partyCronTimes(){
 		$('#modalContent').html('Loading group data...');
 		$('#modal').show();
         console.log("loading party");
-		party = await doAjax('https://habitica.com/api/v3/groups/party', 'GET');
+		party = await doAjax('https://habitica.com/api/v3/groups/party/members', 'GET');
 		var modalHtml = '';
-		var members; 
 		var memberId = [];
 		var memberData = {};
 		var memberName = [];
 		var memberLastCron = [];
 		var memberLastCronMilliseconds = [];
-		var i=0;
-		for (members in party.quest.members) { // member resolves in f74e2316-cad6-4da4-83aa-1ac8c586a8fc eg
-			memberId[i] = members;
+        let members = party.length;
+		ajaxCount = members;
+        for (let i = 0; i < members; i++) { // member resolves in f74e2316-cad6-4da4-83aa-1ac8c586a8fc eg
+			console.log(party[i].id);
+            memberId[i] = party[i].id;
 			$('#modalContent').html('Loading member data...' + (i + 1));
 			// memberData = await loadMember(memberId[i]);
 			memberData = await doAjax('https://habitica.com/api/v3/members/' + memberId[i], 'GET');
@@ -1803,8 +1804,7 @@ async function partyCronTimes(){
 								(date.getDate()<10 ? '0': '') + date.getDate() + ' ' +
 								(date.getHours()<10 ? '0': '') + date.getHours() + ':' +
 								(date.getMinutes()<10 ? '0': '') + date.getMinutes();
-			memberLastCronMilliseconds[i] = date.getTime();  
-			i++;
+			memberLastCronMilliseconds[i] = date.getTime();
 			}
 		
 		for (var i=0; i < memberLastCronMilliseconds.length; i++) {
@@ -1844,6 +1844,8 @@ async function partyCronTimes(){
 		modalHtml += '</pre></div>';
 		$('.dataSectionxy').html(modalHtml);
 		$('#modalData').show();
+        ajaxCount = 0;
+        $('#modal').hide();
 }; 
 // cronHelper Ajax section
 async function scoreTaskDoAjax(id, direction, row){
