@@ -1592,7 +1592,7 @@ async function werewolf() {
 	var date = today.getDate();
 	// get moon phase (ben-daglish.net) (full moon always on phase 15)
 	var lp = 2551443;
-	var now = new Date(year,month+1,date,20,35,0);
+	var now = new Date(year,month-1,date,20,35,0);
 	var new_moon = new Date(1970, 0, 7, 20, 35, 0);
 	var phase = ((now.getTime() - new_moon.getTime()) / 1000) % lp;
 	var fullMoon = false;
