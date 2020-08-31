@@ -390,7 +390,7 @@ async function writeBack(returnData) {
 
     await wait(50);
     ajaxCount --;
-    
+    console.log(ajaxCount);
     if (returnData.items && user) {
 
         ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key) {
@@ -408,6 +408,7 @@ async function writeBack(returnData) {
 
     }
     if (ajaxCount == 0) {
+        console.log("hide modal");
         $('#modal').hide();
     }
 }
@@ -1488,7 +1489,7 @@ htmlStats += '</div>'; //end div costumes-Container
 	$('#userStats').html(htmlStats);
 	addBorderToSelectedWardrobe();
     adjustCostumesContainer();
-	$('#Overview').hide(); 	
+	$('#Overview').hide();
 	
 //	} // end function drawFlexboxes; 
 
@@ -1540,6 +1541,8 @@ function addBorderToSelectedWardrobe() {
 	if (wardrobeEquipped.includes('strength')) {$('#strengt').show();$("#Strength").css({"border": "solid", "border-color": "#4f2a93"});}
 	if (wardrobeEquipped.includes('blessing')) {$('#blessin').show();$("#Blessing").css({"border": "solid", "border-color": "#4f2a93"});}
 	if (wardrobeEquipped.includes('legendary')) {$('#legenda').show();$("#Legendary").css({"border": "solid", "border-color": "#4f2a93"});}
+    ajaxCount = 0;
+    $('#modal').hide();
 	addAvatar(wardrobeEquippedObject);
 }; // end of function addBorderToSelectedWardrobe
 function prepareSkillAmounts () {
@@ -1697,6 +1700,7 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 						//await wait(1000);
 					} // end if equipCountSkip
 				} else {
+                    ajaxCount ++;
 					url = 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip;
 					$('#modalContent').html('Equipping wardrobe ' + nameOfWardrobe + '<br>' + (equipCountSkip + equipCount + 1) + '/8<br>' + avatar + '<br>');
 					$('#modal').show();
@@ -2186,7 +2190,7 @@ async function undress(str) { // str is being passed as "UDC" of "dressup" by th
         }
         costumes[0] = saveCostume();
         $('#costumes0').html(costumeAvatar(costumes[0]));
-        
+        storeData('costume0', costumes[0]);
     }
 
     $('#costume0').html(costumeAvatar(costumes[0]));
@@ -2258,6 +2262,7 @@ function dressup(i) {
             // console.log("is Sotred: " + is + " i=" + i);
         }
     }
+    storeData('costume0', costumes[0]);
 }
 
 
@@ -3837,7 +3842,7 @@ td, th {
 		<div id="documentationAndForm">
    		 	<iframe src="null.html" id="formPasswdSaveFix" name="formPasswdSaveFix" style="display:none">
 			</iframe><!-- DAMN YOU CHROME!! DAMN YOU!!!! http://stackoverflow.com/a/9116737 -->
-			<form id="userApiDetailsForm" method="POST" action="https://www.abbhh.de/wardrobes.html" target="formPasswdSaveFix">
+			<form id="userApiDetailsForm" method="POST" target="formPasswdSaveFix">
 				<fieldset>
        	     		<legend>
 						<span class="highlight">
