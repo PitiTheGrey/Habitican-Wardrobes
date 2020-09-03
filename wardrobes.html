@@ -2203,8 +2203,9 @@ async function undress(str) { // str is being passed as "UDC" of "dressup" by th
 
 function dressup(i) {
 
-    let obj = saveCostume(costumes[0]); // for later ... 4 (make copy of current gear)
-    console.log("old costume 0: " + JSON.stringify(obj));
+    let is;
+    let obj = saveCostume(costumes[0]); // for later ... 4 (make copy of current gear) // do it from local storage, because we dont' know if it has already changed
+    // console.log("old costume 0: " + JSON.stringify(obj));
 
     if (i == 4) { // Dressing Room
     
@@ -2248,15 +2249,23 @@ function dressup(i) {
         }
 
         // 4. deal with Dressing Room
-        const is = isStored(obj); // retunrs i as of the pressed button instead of comparing if 0 is equipped somewhere else
-        
+        is = isStored(obj); // retunrs i as of the pressed button instead of comparing if 0 is equipped somewhere else
+        console.log("is Sotred: " + is + " i=" + i);
         if (is == 0) { // this pigi does not work!
             costumes[4] = saveCostume(obj);
             $('#costume4').html(costumeAvatar(costumes[4]));
             storeData('costume4', costumes[4]);
             $('#CS4').prop('disabled', false);
-            // console.log("is Sotred: " + is + " i=" + i);
+
         }
+        is = isStored(costumes[4]);
+        if (is != 0) {  // gear from Dressing Room is stored somewhere else already
+            costumes[4] = saveCostume(emptyCostume);
+            $('#costume4').html('');
+            storeData('costume4', '');
+            $('#CS4').prop('disabled', true);
+        }
+        
     }
     storeData('costume0', costumes[0]);
 }
@@ -2419,21 +2428,27 @@ function isStored(obj) { // return number of locker, where obj is stored (1, 2, 
     if (!obj) {return;}
     let result = [];
     let arr = [];
+    let object;
     
-    for (let i = 0; i <= 4; i++) {
+    
+    
+    for (let i = 0; i <= 3; i++) {  // 0 including locker0 and the three following .. maybe 4 four following to see if it's inside the dressing room.
         let array = [];
-        let obj = iterateObject(costumes[i], array);
-        !isEmpty(obj) ? arr.push(JSON.stringify(obj)) : arr.push(0);
+        if (i == 0) {
+            object = iterateObject(obj, array);
+        } else {
+            object = iterateObject(costumes[i], array); 
+        }
+        !isEmpty(object) ? arr.push(JSON.stringify(object)) : arr.push(0);
     }
 
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= 3; i++) { // starting from 1 in order to compare 0 to 1-3
         if (arr[0] == arr[i] && arr[i] != 0) {
             result.push(i);
         }
     }
     result = parseInt(result[0]);
     if (!result) {result=0;}
-
     return result;
 
 }
