@@ -1644,8 +1644,8 @@ async function werewolf() {
                 }
                 $('#costume0').html(costumeAvatar(costumes[5]));
                 costumes[5] = saveCostume(emptyCostume);
-                $('#costume5').html(costumeAvatar(costumes[5]));
-
+                $('#costume5').html('');
+                storeData('costume5', '');
 		} else {
 			console.log("Not full moon and werewolf costume not equipped -> write costume to localStorage");
 			
