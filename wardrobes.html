@@ -17,7 +17,6 @@ $(function() { // wraps around all our code to not pollute global namespace
 "use strict";
 let globalRemaining = 30;
 let globalReset = 60;
-let ajaxCount = 0;
 var abort = false;
 var content = {}; // Habitica's content
 var user = {}; // holds user content
@@ -345,18 +344,32 @@ async function fetchData() {
     parseData();
 }
 
+
+var lastStartTime;
+var endTime;
+
+
+function deltaT() {
+    let now = new Date().getTime();
+    if (!lastStartTime) {lastStartTime = now;}
+    let timeDiff = now - lastStartTime;
+    lastStartTime = now;
+    return(timeDiff);
+}
+
+
 async function doAjax(url, method, preferences){   // https://petetasker.com/using-async-await-jquerys-ajax/
+
 
     if (!method) {method = 'POST';}
     if (!preferences) {preferences = '';}
     
-    ajaxCount ++;
-
+    console.log(deltaT() + " // " + url + JSON.stringify(preferences));
     $('#modal').show();
     let result;
 
     await rateLimit();
-    await wait(250);
+    await wait(500);
 
     try {
 		result = await $.ajax({
@@ -378,7 +391,6 @@ async function doAjax(url, method, preferences){   // https://petetasker.com/usi
 	} catch (error) {
 		$('#modalContent').html(url + " / " + error.responseText);
         $('#modal').show();
-        ajaxCount--;
         await wait(2000);
         $('#modal').hide();
 	}
@@ -388,10 +400,7 @@ async function doAjax(url, method, preferences){   // https://petetasker.com/usi
 
 async function writeBack(returnData) {
 
-    await wait(50);
-    ajaxCount --;
-    console.log(ajaxCount);
-    if (returnData.items && user) {
+    if (returnData.items && user && JSON.stringify(content).length > 2) {
 
         ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key) {
             user.items.gear.costume[key] = returnData.items.gear.costume[key];
@@ -407,10 +416,8 @@ async function writeBack(returnData) {
         });
 
     }
-    if (ajaxCount == 0) {
-        console.log("hide modal");
-        $('#modal').hide();
-    }
+
+    $('#modal').hide();
 }
 
 function saveCostume (obj) { // save costume in array of objects
@@ -1541,7 +1548,6 @@ function addBorderToSelectedWardrobe() {
 	if (wardrobeEquipped.includes('strength')) {$('#strengt').show();$("#Strength").css({"border": "solid", "border-color": "#4f2a93"});}
 	if (wardrobeEquipped.includes('blessing')) {$('#blessin').show();$("#Blessing").css({"border": "solid", "border-color": "#4f2a93"});}
 	if (wardrobeEquipped.includes('legendary')) {$('#legenda').show();$("#Legendary").css({"border": "solid", "border-color": "#4f2a93"});}
-    ajaxCount = 0;
     $('#modal').hide();
 	addAvatar(wardrobeEquippedObject);
 }; // end of function addBorderToSelectedWardrobe
@@ -1608,7 +1614,6 @@ async function werewolf() {
 			$('#modalContent').html('today is full moon... you turn into a werewolf!');
 			$('#modal').show();
 			console.log("Full moon but werewolf costume not equipped");
-			// equipping werewolfCostume and unequip rest (hair would be cool, but there is no API. ... Oh, wait... there is!)
 			costumes[5] = saveCostume(); // store current costume
             storeData('costume5', costumes[5]);
             costumes[0] = saveCostume(costumes[5]);
@@ -1700,12 +1705,10 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 						//await wait(1000);
 					} // end if equipCountSkip
 				} else {
-                    ajaxCount ++;
 					url = 'https://habitica.com/api/v3/user/equip/equipped/'+ itemToEquip;
 					$('#modalContent').html('Equipping wardrobe ' + nameOfWardrobe + '<br>' + (equipCountSkip + equipCount + 1) + '/8<br>' + avatar + '<br>');
 					$('#modal').show();
                     $('#modalContentAbort').show();
-                    await wait(1000);
                     await doAjax(url);
 					user.items.gear.equipped[typeOfItem] = itemToEquip;
 					wardrobeEquippedObject[typeOfItem] = itemToEquip;
@@ -1716,7 +1719,6 @@ async function callWardrobe(wardrobe, nameOfWardrobe) {  // wardrobe is intellig
 	    } //end if abort
 	}; // end each
 	await wait(50);
-	// $('#modal').hide();
 	$('#modalContentAbort').hide();
 	getEquippedWardrobes();
 } // end function callWardrobe 
@@ -1790,7 +1792,6 @@ async function partyCronTimes(){
 		var memberLastCron = [];
 		var memberLastCronMilliseconds = [];
         let members = party.length;
-		ajaxCount = members;
         for (let i = 0; i < members; i++) { // member resolves in f74e2316-cad6-4da4-83aa-1ac8c586a8fc eg
 			console.log(party[i].id);
             memberId[i] = party[i].id;
@@ -1844,7 +1845,6 @@ async function partyCronTimes(){
 		modalHtml += '</pre></div>';
 		$('.dataSectionxy').html(modalHtml);
 		$('#modalData').show();
-        ajaxCount = 0;
         $('#modal').hide();
 }; 
 // cronHelper Ajax section
@@ -1883,7 +1883,6 @@ async function scoreTaskDoAjax(id, direction, row){
 		
 		// now try ajax
         await rateLimit();
-        await wait(1000);
         let result;
         try {
 			result = await $.ajax({
@@ -2185,11 +2184,6 @@ async function undress(str) { // str is being passed as "UDC" of "dressup" by th
         $('#modal').show();
         let result;
         equipCostume(costumes[0], emptyCostume);
-        
-        while (ajaxCount > 0) {
-            console.log(ajaxCount);
-            await wait(250);
-        }
         costumes[0] = saveCostume();
         $('#costumes0').html(costumeAvatar(costumes[0]));
         storeData('costume0', costumes[0]);
@@ -2371,7 +2365,7 @@ async function ajaxCostumes(obj, objNew, objOld) {
     let pref;
 
     $('#modalContent').html("Costumes...");
-    $('modal').show();
+    $('#modal').show();
 
     for (let element of ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory']) {
         if (obj[element] != '' && !obj[element].includes('_base_0')) {
@@ -2380,19 +2374,17 @@ async function ajaxCostumes(obj, objNew, objOld) {
             await doAjax('https://habitica.com/api/v3/user/equip/costume/' + obj[element], 'POST');
         }
     }
-
+    $('#modalContent').html("Skin, hair, ...");
+    $('#modal').show();
     pref = '{';
     for (let element of ['skin', 'shirt', 'chair', 'size']) {
         if (obj.preferences[element] != '') {
-            $('#modalContent').html("Skin, hair, ...");
-                key = 'preferences.' + element;
-                val = obj.preferences[element];
-                pref += '"' + key + '" : "' + val + '",';
+            key = 'preferences.' + element;
+            val = obj.preferences[element];
+            pref += '"' + key + '" : "' + val + '",';
         }
     }
-
     for (let element of ['color', 'base', 'bangs', 'beard', 'mustache', 'flower']) {
-        $('#modalContent').html("Skin, hair, ...");
         key = 'preferences.hair.' + element;
         val = obj.preferences.hair[element];
         pref += '"' + key + '" : "' + val + '",';
@@ -2405,7 +2397,6 @@ async function ajaxCostumes(obj, objNew, objOld) {
 
     pref = pref.slice(0, -1) + '}';
     await doAjax('https://habitica.com/api/v3/user', 'PUT', JSON.parse(pref));
-
 }
 
 function iterateObject (obj, array) { // gets values for each key in a costumes-object and returns them in an array
