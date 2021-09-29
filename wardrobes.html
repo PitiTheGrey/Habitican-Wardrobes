@@ -179,17 +179,17 @@ var skills = {"rogue": {
 				"field1": {
 					"name": "Protective Aura",
                     "API": "https://habitica.com/api/v3/user/class/cast/protectAura",
-                    "cost": 15,
-					"nameOfWardrobe": "Blessing",
+                    "cost": 30,
+					"nameOfWardrobe": "Constitution",
 					"unlock": 13,
-					"wardrobe": "blessing" },
+					"wardrobe": "constitution" },
 				"field2": {
 					"name": "Searing Brightness",
                     "API": "https://habitica.com/api/v3/user/class/cast/brightness",
                     "cost": 15,
-					"nameOfWardrobe": "Constitution",
+					"nameOfWardrobe": "Intelligence",
 					"unlock": 12,
-					"wardrobe": "constitution" },
+					"wardrobe": "intelligence" },
 				"field3": {
 					"name": "Blessing",
                     "API": "https://habitica.com/api/v3/user/class/cast/healAll",
@@ -911,7 +911,6 @@ function getBluestTask() {
 } // end of getMaxGear
 
 
-
 function getEquippedWardrobes() {
 		// get array with all wardrobes currently equipped
 		wardrobeEquipped.includes('Initial') ? wardrobeEquipped = ['Initial'] : wardrobeEquipped = [];
@@ -1360,6 +1359,7 @@ htmlStats += '</div>'; //end div costumes-Container
     			'</button>' +
     			'<div class="dropdown-content">' +
 					'<a id="PAR">Party Cron times</a>' +
+                    '<a id="PQP">Party Quest Progress</a>' +
       				'<a id="USR">User Data</a>' +
       				'<a id="HCT">Habitica Content</a>' +
       				'<a id="SKL">Skills</a>' +
@@ -2500,6 +2500,33 @@ async function hideDropdown() {
     $('.navbar').css({pointerEvents: 'auto'});
 }
 
+async function questInfo() {
+    $('#modalContent').html('Please wait, fetching data...');
+    $('#modal').show();
+    let party = await doAjax('https://habitica.com/api/v3/groups/party', 'GET');
+    $('#modal').hide();
+    if (party.quest.active) {
+        $('#questInfo').html('Current quest: ' + content.quests[party.quest.key].text);
+        if (jQuery.isEmptyObject(content.quests[party.quest.key].collect)) {
+            $('#questInfo').append('<br>Boss health: ' + Math.round(party.quest.progress.hp * 100) / 100 + ' / ' + content.quests[party.quest.key].boss.hp + '<br>');
+            $('#questInfo').append('You have pending damage of: ' + Math.round(user.party.quest.progress.up * 100) / 100 + '<br>');
+            $('#questInfo').append('Boss will cause damage of: ' + Math.round(user.party.quest.progress.down * 100) / 100);
+        } else {
+            $('#questInfo').append('Items found: <br>');
+            Object.keys(content.quests[party.quest.key].collect).forEach(element => {
+                $('#questInfo').append('<br> The party has collected ' + party.quest.progress.collect[element] + ' / ' + content.quests[party.quest.key].collect[element].count + ' ' + content.quests[party.quest.key].collect[element].text);
+            })
+            $('#questInfo').append('<br> You have ' + user.party.quest.progress.collectedItems + ' items pending.');
+        
+            }
+    $('#questInfo').append('(This information will only be updated via Data - Party Quest Progress)');
+        
+        
+    }
+    
+     //if ((party.data.quest.key != undefined) && (party.data.quest.active != true) && (party.data.quest.members[habId] == undefined)){
+}
+
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 ///////////////// Buttons ///////////////////////
@@ -2582,6 +2609,9 @@ async function hideDropdown() {
 	 $('#PAR').click(function(){
 	 			partyCronTimes();
 	 			})
+     $('#PQP').click(function(){
+                questInfo();
+                })
 	 $('#CRO').click(function(){
 	 			cronHelper();
 	 			$('#modalCronHelper').show();
@@ -3844,7 +3874,7 @@ td, th {
 		<div id="userStats">
         </div>
 		<hr class="clear">
-		<div id="buttons"></div>
+		<div id="questInfo"></div>
 		<hr class="clear">
 	
 		<div id="documentationAndForm">
@@ -3915,3 +3945,5 @@ td, th {
 
 
 </body></html>
+
+
