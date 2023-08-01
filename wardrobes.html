@@ -37,6 +37,7 @@ var strength = {};
 var initialGear = {};
 var amountOfSkill = 0;
 var rememberGear = "true"; // use string (required by localStorage)
+var returnToPreviousGear = "false"; // use string (required by localStorage)
 var castOnBluestTask = "true"; // use string (required by localStorage)
 var threshold = 3;
 var alternativeAttribute = 'none';
@@ -337,7 +338,6 @@ async function fetchData() {
     $('#modal').show();
     
     user = await doAjax('https://habitica.com/api/v3/user', 'GET');
-    console.log("content" + JSON.stringify(content).length);
     if ($.isEmptyObject(content)) {content = await doAjax('https://habitica.com/api/v3/content', 'GET');}
     tasksFromDb = await doAjax('https://habitica.com/api/v3/tasks/user', 'GET');
 
@@ -379,7 +379,7 @@ async function doAjax(url, method, preferences){   // https://petetasker.com/usi
 			dataType: 'json',
 			cache: false,
 			beforeSend: function(xhr){
-				xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes v.2.5');
+				xhr.setRequestHeader('x-client', '9226cae6-d852-45da-a51b-ec2c9cb759e6-Habitican Wardrobes v.3.1');
 				xhr.setRequestHeader('x-api-user', userID);
 				xhr.setRequestHeader('x-api-key',  apiToken);
 			},
@@ -474,7 +474,13 @@ function costumeAvatar(costume) {
         ["eyewear", "head", "weapon", "shield", "body", "headAccessory"].forEach (function(element) {
 		    if (costume[element]) {
                 if (!costume[element].includes('base_0')){
-					avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume[element] + '.png" class="costume">';
+					avatarCostume += '<img src="https://s3.amazonaws.com/habitica-assets/mobileApp/images/' + costume[element];
+                    if (costume[element] == 'head_special_1' || costume[element] == 'broad_armor_special_1' ||  costume[element] == 'head_special_0' || costume[element] == 'armor_special_0') {
+                        avatarCostume += '.gif" class="costume">';
+                        } 
+                    else {
+                        avatarCostume += '.png" class="costume">';
+                    }
 	    		}
 		    }
     	});
@@ -545,8 +551,15 @@ function storageFirstLoad() {
 				{$('#rememberGear').prop('checked', false); rememberGear = "false";}
 			}
 			storeData("Remember Gear", rememberGear);
-			
-		castOnBluestTask = storeData("Bluest Task");
+            
+        returnToPreviousGear = storeData("Return To Previous Gear");
+            if (returnToPreviousGear == "true") {
+                $('#returnToPreviousGear').prop('checked', false); returnToPreviousGear = "false";
+            } else {
+                $('#returnToPreviousGear').prop('checked', true); returnToPreviousGear = "true";
+		    }
+        
+        castOnBluestTask = storeData("Bluest Task");
 			if (castOnBluestTask != "false") {
 				castOnBluestTask = "true";
 			} else {
@@ -1264,10 +1277,10 @@ htmlStats += 	'<br><br>'+
     			'<button type="button" id="add4" class="add">+</button>'+
 				'<br>'+
 				'</div>';
-	 			
 htmlStats += 	'<div>Return to Wardrobe Intelligence: ';
 				rememberGear == "true" ? htmlStats += '<input type="checkbox" id="rememberGear" checked="checked"/>' : htmlStats += '<input type="checkbox" id="rememberGear" />';
-				
+htmlStats +=    '<div>Return to previous gear: ';
+                returnToPreviousGear == "true" ? htmlStats += '<input type="checkbox" id="returnToPreviousGear" checked="checked"/>' : htmlStats += '<input type="checkbox" id="returnToPreviousGear" />';
 htmlStats += 	'<div class="bluestTask">Cast Skill on bluest task:';
 				castOnBluestTask == "true" ? htmlStats += '<input type="checkbox" id="castOnBluestTask" checked="checked"/>' : htmlStats += '<input type="checkbox" id="castOnBluestTask" />';
 				htmlStats += '</div>';
@@ -1278,7 +1291,7 @@ htmlStats += 	'<div class="bluestTask">Cast Skill on bluest task:';
 				// loop through tasks and fill "select options" with all possible options
 htmlStats +=	'<div class="taskSelector">Choose task for your skill:<br><select style="width: 250px !important; max-width: 250px; overflow: hidden;" id="selectTask" ></select></div>';
 
-htmlStats += '</div>'; //end div skills-Container
+htmlStats += '</div></div>'; //end div skills-Container
 
 // push in costumes-Container
 
@@ -1382,7 +1395,7 @@ htmlStats += '</div>'; //end div costumes-Container
 
 	getMaxGear();
 	
-	htmlStats += '<div class="wardrobes-Container">'; 
+	htmlStats += '<div class="wardrobes-Container">';
 	var copyGear = JSON.parse(JSON.stringify(user.items.gear.equipped)); // make a deep copy of user.items.gear.equipped so not to corrupt the origninal var
 
 	//start flexbox 1
@@ -1492,7 +1505,6 @@ htmlStats += '</div>'; //end div costumes-Container
 				'<div>Your most valueable task is: </div><div> ' + mostValueableTaskName + '<div></div><div> with a value of: ' + Math.round(mostValueableTaskValue) + '</div><div></div>' +
 				'</div>' + // end single box;
 				'</div>'; // end Flexboxes
-		
 	$('#userStats').html(htmlStats);
 	addBorderToSelectedWardrobe();
     adjustCostumesContainer();
@@ -1577,7 +1589,7 @@ function limitAmountOfSkill(field) {
     const f = field.substr(-1); // get last digit of "field1"...
 
     amount = parseInt($('#amount' + f).val());
-    amount = Math.min(20, Math.max(amount, 1));
+    amount = Math.min(40, Math.max(amount, 1));
     storeData(('skill' + f), amount);
     amount = Math.max(0, Math.min(Math.floor(user.stats.mp / skills[user.stats.class][field].cost), amount));
 
@@ -1656,9 +1668,9 @@ async function werewolf() {
 async function callSkill(amount, url, name, cost, nameOfWardrobe, field) {
   $('#modalContentAbort').css("top", "27%");
   $('#modalContentAbort').show();
-  if (amount > 20) {
-  	amount = 20;
-	alert("The number of skills to be cast is reduced to 20 \n The field value is set back to 1 \n Please do not overload the Habitica Server");
+  if (amount > 40) {
+  	amount = 40;
+	alert("The number of skills to be cast is reduced to 40 \n The field value is set back to 1 \n Please do not overload the Habitica Server");
   }
   const target = skills[user.stats.class][field].taskId; // some skills are cast on tasks
   if (target) {url += '?targetId=' + target};
@@ -1740,14 +1752,22 @@ async function callTriple (amount, url, name, cost, wardrobe, nameOfWardrobe, fi
 					skills[user.stats.class][field].nameOfWardrobe,
 					field);
 			getEquippedWardrobes();
-			if (wardrobeEquipped.includes('intelligence')) {
-					console.log(nameOfWardrobe + 'already equipped');
-			} else {
-					if (rememberGear=="true") { // remberGear displays as "Return to wardrobe Intelligence" on the front End. Think in FrontEnd locig here!
+			//return to Wardrobe Intelligence - no button activated
+            if (rememberGear!="true" && returnToPreviousGear!="true") {
+                if (wardrobeEquipped.includes('intelligence')) {
+				    console.log(nameOfWardrobe + 'already equipped');
+                }
+            } else {
+					if (rememberGear=="true") { // remberGear displays as "Return to wardrobe Intelligence" on the front End. Think in FrontEnd logic here!
 							if (!abort) {await callWardrobe(intelligence, 'Intelligence');}
 					} else { 
-							console.log("OK. leaving " + name + " equipped.");
-							$('#modal').hide();}
+                            if (returnToPreviousWardrobe=="true") {
+                                if (!abort) {await callWardrobe(initialGear, 'previous Gear')}
+                            } else {
+							    console.log("OK. leaving " + name + " equipped.");
+							}
+                            $('#modal').hide();
+                    }
 			}
 			getEquippedWardrobes();
 			abort = false;
@@ -2501,6 +2521,34 @@ async function hideDropdown() {
 }
 
 async function questInfo() {
+    // get impact of skills on best wardrobe
+    var impactInt = 0;
+    var impactStr = 0;
+    var factor = 1;
+    ['head', 'armor', 'weapon', 'shield', 'back', 'body', 'eyewear', 'headAccessory'].forEach(function(key) {
+        if (intelligence[key] && content.gear.flat[intelligence[key]]) {
+            (content.gear.flat[intelligence[key]].klass == user.stats.class ||
+            content.gear.flat[intelligence[key]].specialClass == user.stats.class) ? factor = 1.5 : factor = 1;
+            impactInt += factor * content.gear.flat[intelligence[key]].int;
+        };
+        if (strength[key] && content.gear.flat[strength[key]]) {
+            (content.gear.flat[strength[key]].klass == user.stats.class ||
+            content.gear.flat[strength[key]].specialClass == user.stats.class) ? factor = 1.5 : factor = 1;
+            impactStr += factor * content.gear.flat[strength[key]].str;
+        };
+    });
+    
+    var perfectDayBonus = Math.floor(Math.min(user.stats.lvl / 2, 50));
+    if (dailyCompleted == dailyTotal) {
+        impactInt += perfectDayBonus;
+        impactStr += perfectDayBonus;
+    };
+    impactInt += Math.min(user.stats.lvl / 2, 50) + user.stats.int + user.stats.buffs.int; // level + allocation + buffs
+    impactStr += Math.min(user.stats.lvl / 2, 50) + user.stats.str + user.stats.buffs.str;
+    console.log(impactInt);
+    impactInt = Math.ceil(impactInt / 10);
+    impactStr = Math.round(55 * impactStr / (impactStr + 70));
+        
     $('#modalContent').html('Please wait, fetching data...');
     $('#modal').show();
     let party = await doAjax('https://habitica.com/api/v3/groups/party', 'GET');
@@ -2511,6 +2559,14 @@ async function questInfo() {
             $('#questInfo').append('<br>Boss health: ' + Math.round(party.quest.progress.hp * 100) / 100 + ' / ' + content.quests[party.quest.key].boss.hp + '<br>');
             $('#questInfo').append('You have pending damage of: ' + Math.round(user.party.quest.progress.up * 100) / 100 + '<br>');
             $('#questInfo').append('Boss will cause damage of: ' + Math.round(user.party.quest.progress.down * 100) / 100);
+            if (user.stats.class == 'wizard') {
+                $('#questInfo').append('<br>Impact of Burst of Flames: ' + impactInt);
+                $('#questInfo').append('<br>Number of Bursts of Flames necessary to kill the boss: ' + Math.ceil( (party.quest.progress.hp - user.party.quest.progress.up) / impactInt * 100 / 100));
+            } 
+            if (user.stats.class == 'warrior') {
+                $('#questInfo').append('<br>Impact of Brutal Smash: ' + impactStr);
+                $('#questInfo').append('<br>Number of Brutal Smashes necessary to kill the boss: ' + Math.ceil( (party.quest.progress.hp - user.party.quest.progress.up) / impactStr * 100 / 100));
+                }
         } else {
             $('#questInfo').append('Items found: <br>');
             Object.keys(content.quests[party.quest.key].collect).forEach(element => {
@@ -2519,12 +2575,10 @@ async function questInfo() {
             $('#questInfo').append('<br> You have ' + user.party.quest.progress.collectedItems + ' items pending.');
         
             }
-    $('#questInfo').append('(This information will only be updated via Data - Party Quest Progress)');
+    $('#questInfo').append('<br>(This information will only be updated via Data the -> Party Quest Progress - Button)');
         
         
     }
-    
-     //if ((party.data.quest.key != undefined) && (party.data.quest.active != true) && (party.data.quest.members[habId] == undefined)){
 }
 
 /////////////////////////////////////////////////
@@ -2724,6 +2778,7 @@ async function questInfo() {
         $('.skills-Container').hide();
         $('.costumes-Container').hide();
         $('.wardrobes-Container').show();
+        console.log("wardobes");
         hideDropdown();
         })
     $('#FEC').click(function(){
@@ -2835,10 +2890,23 @@ async function questInfo() {
 		storeData('Cron', cronHelperWardrobeForCron);
 	})	
 	$('#rememberGear').click(function(){	
-		rememberGear = JSON.stringify($('#rememberGear').is(':checked')); 
-		storeData("Remember Gear", rememberGear);
-		console.log(rememberGear);
-		})
+		rememberGear = JSON.stringify($('#rememberGear').is(':checked'));
+        storeData("Remember Gear", rememberGear);
+		if (rememberGear == 'true') {
+            returnToPreviousGear = 'false';
+            $('#returnToPreviousGear').prop('checked', false);
+            storeData("Return To Previous Gear", returnToPreviousGear);
+        }
+	})
+    $('#returnToPreviousGear').click(function(){
+        returnToPreviousGear = JSON.stringify($('#returnToPreviousGear').is(':checked'));
+        storeData("Return To Previous Gear", returnToPreviousGear);
+        if (returnToPreviousGear == 'true') {
+            rememberGear = 'false';
+            $('#rememberGear').prop('checked', false);
+            storeData("Remember Gear", rememberGear);
+        }
+    })
 	$('#allowWerewolf').click(function(){
 		allowWerewolf = $('#allowWerewolf').is(':checked');
 		storeData('Werewolf', allowWerewolf);
@@ -3706,6 +3774,8 @@ td, th {
 				<div class="dataSectionFix">
 					<h3>Version Info:</h3><br><br>
 			    	<ol style="list-style-position: outside;"> 
+                    <h4>Version 3.1</h4><br>
+                        Data - Party Quest Progress (Button) updated. You have an estimation now, how may skills to use to finish a boss. (Bug fixed Feb. 2023)
                     <h4>Version 3.0</h4><br>
                         Habitican Wardrobes offers a new Front End. It's called 'Costumes'. Here you can see your current appearance and save it to 3 different
                         lockers. If you want to save a costume to your locker, please change your costume on Habitica, come back here and refresh the page and use a button
@@ -3849,7 +3919,7 @@ td, th {
 
 	<div id="innerBody">
 		<h1>Habitican Wardrobes<br>
-			<span>(v 3.0 August 2020)</span>
+			<span>(v 3.1 November 2022)</span>
 		</h1>
 		<div id="headerExtras"></div>
 		<hr class="clear">
@@ -3945,5 +4015,3 @@ td, th {
 
 
 </body></html>
-
-
